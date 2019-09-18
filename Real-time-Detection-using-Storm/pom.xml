@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-core</artifactId>
-            <version>1.1.1</version>
+            <version>1.2.3</version>
             <scope>provided</scope>
         </dependency>
         <!-- <dependency> <groupId>org.apache.storm</groupId> <artifactId>storm-kafka-client</artifactId>
@@ -50,7 +50,7 @@
         <dependency>
             <groupId>org.apache.storm</groupId>
             <artifactId>storm-kafka</artifactId>
-            <version>1.1.1</version>
+            <version>1.2.3</version>
         </dependency>
 
         <dependency>
