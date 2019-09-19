@@ -68,20 +68,14 @@ public class MainTopo {
     @Option(name = "--numWorkers", aliases = {"--workers"}, metaVar = "WORKERS", usage = "number of workers")
     private static int numWorkers = 8;
 
-    @Option(name = "--sourceURL", aliases = {"--source"}, metaVar = "DB SOURCE URL", usage = "Source URL of MariaDB")
-    private static String sourceURL = "jdbc:mysql://localhost/stormtest";
-
-    @Option(name = "--tableName", aliases = {"--table"}, metaVar = "DB TABLE NAME", usage = "name of MariaDB table")
-    private static String tableName = "test";
-
-    @Option(name = "--dataSourceUser", aliases = {"--user"}, metaVar = "DB USER NAME", usage = "name of MariaDB user")
-    private static String dataSourceUser = "root";
-
-    @Option(name = "--dataSourcePassword", aliases = {"--password"}, metaVar = "DB USER PASSWORD", usage = "password of MariaDB user")
-    private static String dataSourcePassword = "mysql";
-
     @Option(name = "--modelPath", aliases = {"--model"}, metaVar = "MODEL PATH", usage = "path of deep learning model")
     private static String modelPath = "./resultModel";
+
+    @Option(name = "--zookeeperHosts", aliases = {"--zookeeper"}, metaVar = "ZOOKEEPER HOST", usage = "path of zookeeper host")
+    private static String zkhosts = "MN:42181,SN01:42181,SN02:42181,SN03:42181,SN04:42181,SN05:42181,SN06:42181,SN07:42181,SN08:42181";
+
+    @Option(name = "--brokerList", aliases = {"--broker"}, metaVar = "BROKER LIST", usage = "path of broker list, bootstrap servers")
+    private static String bootstrap = "MN:9092,SN01:9092,SN02:9092,SN03:9092,SN04:9092,SN05:9092,SN06:9092,SN07:9092,SN08:9092";
 
     public static void main(String[] args) throws NotAliveException, InterruptedException, TException {
         new MainTopo().topoMain(args);
@@ -113,9 +107,6 @@ public class MainTopo {
             throw new IllegalArgumentException("Topology Name must be something");
         }
 
-        String zkhosts = "MN:42181,SN01:42181,SN02:42181,SN03:42181,SN04:42181,SN05:42181,SN06:42181,SN07:42181,SN08:42181";
-        String bootstrap = "MN:9092,SN01:9092,SN02:9092,SN03:9092,SN04:9092,SN05:9092,SN06:9092,SN07:9092,SN08:9092";
-
 			/* Kafka Spout Configuration */
         BrokerHosts brokerHosts = new ZkHosts(zkhosts);
 
@@ -137,41 +128,12 @@ public class MainTopo {
         ExpandURLBolt expandBolt = new ExpandURLBolt();
         ValidateURLBolt validateBolt = new ValidateURLBolt();
         DetectBolt detectBolt = new DetectBolt(modelPath);
-        ReportBolt reportBolt = new ReportBolt();
 
 			/* KafkaBolt */
         MyKafkaBolt kafkabolt = new MyKafkaBolt().withProducerProperties(props)
                 .withTopicSelector(new DefaultTopicSelector(outputTopic))
                 .withTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper());
 
-			/* JDBC Bolt */
-        Map hikariConfigMap = Maps.newHashMap();
-        hikariConfigMap.put("dataSourceClassName", "com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-        hikariConfigMap.put("dataSource.url", sourceURL);
-        hikariConfigMap.put("dataSource.user", dataSourceUser);
-        hikariConfigMap.put("dataSource.password", dataSourcePassword);
-
-        ConnectionProvider connectionProvider = new HikariCPConnectionProvider(hikariConfigMap);
-        connectionProvider.prepare();
-
-        List<Column> columnSchema = Lists.newArrayList(
-                new Column("text", java.sql.Types.VARCHAR),
-                new Column("url", java.sql.Types.VARCHAR),
-                new Column("result", java.sql.Types.CHAR),
-                new Column("timestamp", java.sql.Types.BIGINT)
-        );
-
-        JdbcMapper simpleJdbcMapper = new SimpleJdbcMapper(columnSchema);
-
-        JdbcInsertBolt insertDBBolt = new JdbcInsertBolt(connectionProvider, simpleJdbcMapper)
-                .withInsertQuery("insert into " + tableName + " (text, url, result, timestamp) values (?,?,?,?)")
-                .withQueryTimeoutSecs(30);
-
-//			JdbcMapper simpleJdbcMapper = new SimpleJdbcMapper(tableName, connectionProvider);			
-//			JdbcInsertBolt userPersistanceBolt = new JdbcInsertBolt(connectionProvider, simpleJdbcMapper)
-//			                                    .withTableName("test")
-//			                                    .withQueryTimeoutSecs(30);
-			
 			/* Topology Build */
         TopologyBuilder builder = new TopologyBuilder();
 
@@ -180,15 +142,7 @@ public class MainTopo {
         builder.setBolt("expand-bolt", expandBolt).shuffleGrouping("extract-bolt");
 		builder.setBolt("validate-bolt", validateBolt).shuffleGrouping("expand-bolt");
 		builder.setBolt("detect-bolt", detectBolt).shuffleGrouping("validate-bolt");
-
-//        builder.setBolt("expand-bolt", expandBolt).shuffleGrouping("extract-bolt");
-//        builder.setBolt("validate-bolt", validateBolt).shuffleGrouping("expand-bolt");
-//        builder.setBolt("detect-bolt", detectBolt).shuffleGrouping("extract-bolt");
-
-//        builder.setBolt("detect-bolt", detectBolt).shuffleGrouping("extract-bolt");
         builder.setBolt("kafka-bolt", kafkabolt).shuffleGrouping("detect-bolt");            // Store Data to Kafka
-
-        //builder.setBolt("db-bolt", insertDBBolt).shuffleGrouping("detect-bolt");
 
         Config config = new Config();
         config.setNumWorkers(numWorkers);
