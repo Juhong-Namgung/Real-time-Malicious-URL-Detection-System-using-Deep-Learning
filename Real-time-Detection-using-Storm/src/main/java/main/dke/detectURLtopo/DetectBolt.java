@@ -5,6 +5,8 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -15,14 +17,15 @@ import org.apache.storm.tuple.Values;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Session;
 import org.tensorflow.Tensor;
+import org.apache.storm.shade.org.json.simple.JSONObject;
 
 public class DetectBolt extends BaseRichBolt {
+    private static Log LOG = LogFactory.getLog(DetectBolt.class);
 
     OutputCollector collector;
     private int[][] urlTensor = new int[1][75];
-    private String modelPath;
-
-    private static String printable = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ";
+    private String modelPath;       // Deep Learning Model Path
+    private Printable printable;    //
 
     public DetectBolt(String path) {
         this.modelPath = path;
@@ -30,15 +33,15 @@ public class DetectBolt extends BaseRichBolt {
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
+        printable = new Printable();
     }
 
     @Override
     public void execute(Tuple input) {
         String validURL = (String) input.getValueByField("validurl");
-
+        String detectResult;
         try (SavedModelBundle b = SavedModelBundle.load(modelPath, "serve")) {
-
-            urlTensor = convert(validURL);
+            urlTensor = printable.convert2D(validURL);
             //create an input Tensor
             Tensor x = Tensor.create(urlTensor);
 
@@ -50,17 +53,27 @@ public class DetectBolt extends BaseRichBolt {
                     .run()
                     .get(0);
 
-            float[][] isy = (float[][]) result.copyTo(new float[1][1]);
-            System.out.println("Result value: " + isy[0][0]);
+            float[][] prob = (float[][]) result.copyTo(new float[1][1]);
+            LOG.info("Result value: " + prob[0][0]);
 
-            if (isy[0][0] >= 0.5) {
-                System.out.println("[WARNING] " + validURL + " is a malicious URL!!!");
-                collector.emit(new Values((String) input.getValueByField("text"), validURL, "malicious", System.currentTimeMillis()));
+            if (prob[0][0] >= 0.5) {
+                LOG.warn(validURL + " is a malicious URL!!!");
+                detectResult = "malicious";
             } else {
-                System.out.println("[INFO] " + validURL + " is a benign URL!!!");
-                collector.emit(new Values((String) input.getValueByField("text"), validURL, "benign", System.currentTimeMillis()));
+                LOG.info(validURL + " is a benign URL!!!");
+                detectResult = "benign";
             }
         }
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("text", input.getValueByField("text"));
+        jsonObject.put("URL", validURL);
+        jsonObject.put("result", detectResult);
+        jsonObject.put("time", System.currentTimeMillis());
+
+//        resultKafka += "text: " + input.getValueByField("text")
+//                + ", URL: " + validURL + ", result: " + detectResult +
+//                "time: " + System.currentTimeMillis();
+        collector.emit(new Values(jsonObject));
 
         try {
             Thread.sleep(10);
@@ -71,21 +84,7 @@ public class DetectBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("text", "url", "result", "timestamp"));
+        declarer.declare(new Fields("message"));
     }
 
-    public int[][] convert(String url) {
-        int[][] result = new int[1][75];
-
-        if (url.length() < 75) {
-            for (int i = 75 - url.length(), j = 0; i < 75; i++, j++)
-                result[0][i] = printable.indexOf(url.charAt(j)) + 1;
-            for (int i = 0; i < 74 - url.length(); i++)
-                result[0][i] = 0;
-        } else {
-            for (int j = 0; j < 75; j++)
-                result[0][j] = printable.indexOf(url.charAt(j + url.length() - 75)) + 1;
-        }
-        return result;
-    }
 }
