@@ -120,8 +120,7 @@ public class MainTopo {
         props.put("bootstrap.servers", bootstrap);
         props.put("acks", "1");
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
+        props.put("value.serializer", "org.springframework.kafka.support.serializer.JsonSerializer");
 
         KafkaSpout kafkaSpout = new KafkaSpout(kafkaSpoutConfig);
         ExtractURLBolt extractBolt = new ExtractURLBolt();

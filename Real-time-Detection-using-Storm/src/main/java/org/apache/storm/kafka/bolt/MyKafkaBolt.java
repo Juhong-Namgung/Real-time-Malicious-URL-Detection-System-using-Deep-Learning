@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ import org.apache.storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper;
 import org.apache.storm.kafka.bolt.mapper.TupleToKafkaMapper;
 import org.apache.storm.kafka.bolt.selector.DefaultTopicSelector;
 import org.apache.storm.kafka.bolt.selector.KafkaTopicSelector;
+
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.Map;
@@ -61,17 +62,10 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
 
     private KafkaProducer<K, V> producer;
     private OutputCollector collector;
-    private TupleToKafkaMapper<K,V> mapper;
+    private TupleToKafkaMapper<K, V> mapper;
     private KafkaTopicSelector topicSelector;
     private Properties boltSpecifiedProperties = new Properties();
 
-    // Variable for Performance Evaluation 
-//    private static long rcv_number_of_tuples;
-//    private long lead_time;
-//    private long tuple_size;
-//    private long total_tuple_size;
-//    private long avg_total_lead_time;
-    
     /**
      * {@see KafkaBolt#setFireAndForget(boolean)} for more details on this. 
      */
@@ -81,9 +75,10 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
      */
     private boolean async = true;
 
-    public MyKafkaBolt() {}
+    public MyKafkaBolt() {
+    }
 
-    public MyKafkaBolt<K,V> withTupleToKafkaMapper(TupleToKafkaMapper<K,V> mapper) {
+    public MyKafkaBolt<K, V> withTupleToKafkaMapper(TupleToKafkaMapper<K, V> mapper) {
         this.mapper = mapper;
         return this;
     }
@@ -96,31 +91,25 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
     public MyKafkaBolt<K, V> withTopicSelector(String topic) {
         return withTopicSelector(new DefaultTopicSelector(topic));
     }
-    
-    public MyKafkaBolt<K,V> withTopicSelector(KafkaTopicSelector selector) {
+
+    public MyKafkaBolt<K, V> withTopicSelector(KafkaTopicSelector selector) {
         this.topicSelector = selector;
         return this;
     }
 
-    public MyKafkaBolt<K,V> withProducerProperties(Properties producerProperties) {
+    public MyKafkaBolt<K, V> withProducerProperties(Properties producerProperties) {
         this.boltSpecifiedProperties = producerProperties;
         return this;
     }
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
-       
-//    	rcv_number_of_tuples = 0l;
-//    	lead_time = 0l;
-//    	tuple_size = 0l;
-//    	total_tuple_size = 0l;
-//    	avg_total_lead_time = 0l;
-    	
-    	LOG.info("Preparing bolt with configuration {}", this);
+
+        LOG.info("Preparing bolt with configuration {}", this);
         //for backward compatibility.
         if (mapper == null) {
             LOG.info("Mapper not specified. Setting default mapper to {}", FieldNameBasedTupleToKafkaMapper.class.getSimpleName());
-            this.mapper = new FieldNameBasedTupleToKafkaMapper<K,V>();
+            this.mapper = new FieldNameBasedTupleToKafkaMapper<K, V>();
         }
 
         //for backward compatibility.
@@ -137,7 +126,7 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
         producer = mkProducer(boltSpecifiedProperties);
         this.collector = collector;
     }
-    
+
     /**
      * Intended to be overridden for tests.  Make the producer with the given props
      */
@@ -147,8 +136,8 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
 
     @Override
     protected void process(final Tuple input) {
-    	//LOG.info("@@@@@@@@@ KAFKABOLT READY TO CHANGED!!",this);
-    	//System.out.println("KAFKABOLT READY TO CHANGED");
+        //LOG.info("@@@@@@@@@ KAFKABOLT READY TO CHANGED!!",this);
+        //System.out.println("KAFKABOLT READY TO CHANGED");
         K key = null;
         V message = null;
         String topic = null;
@@ -156,7 +145,7 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
             key = mapper.getKeyFromTuple(input);
             message = mapper.getMessageFromTuple(input);
             topic = topicSelector.getTopic(input);
-            if (topic != null ) {
+            if (topic != null) {
                 Callback callback = null;
 
                 if (!fireAndForget && async) {
@@ -194,21 +183,10 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
             collector.reportError(ex);
             collector.fail(input);
         } finally {
-        	//lead_time = System.currentTimeMillis() - input.getLongByField("start-time");
-        	//lead_time += System.currentTimeMillis() - input.getLongByField("start-time");
-        	//if(lead_time > 0l) {
-        	//	avg_total_lead_time += lead_time;        	
-        		
-        	}
-        	//rcv_number_of_tuples++;
-        	//tuple_size += (input.getBinary(0)).length;
-        	//total_tuple_size += input.getLongByField("total_size");
-        	//tuple_size += input.getLongByField("size");
-        	//LOG.info("###latency: " + lead_time );
-        	//LOG.info("\n$$$$ Bolt cleanup, total_rcv_number_of_tuples: " + rcv_number_of_tuples + " /// avg_latency_time,"+((double)avg_total_lead_time/(double)rcv_number_of_tuples) + " /// Kafkabolt TUPLE SIZE: " +  tuple_size + " ///Total Tuple Size: " + total_tuple_size);
-        	//LOG.info("\n$$$$ Bolt cleanup,total_rcv_number_of_tuples," + rcv_number_of_tuples+",avg_time,"+((double)lead_time/(double)rcv_number_of_tuples));
         }
-    
+
+    }
+
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
@@ -217,7 +195,6 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
 
     @Override
     public void cleanup() {
-    	//LOG.info("\n$$$$ Bolt cleanup, total_rcv_number_of_tuples: " + rcv_number_of_tuples + " /// avg_latency_time,"+((double)avg_total_lead_time/(double)rcv_number_of_tuples) + " /// Kafkabolt TUPLE SIZE: " +  tuple_size + " ///Total Tuple Size(Now num): " + total_tuple_size);
         producer.close();
     }
 
@@ -239,8 +216,8 @@ public class MyKafkaBolt<K, V> extends BaseTickTupleAwareRichBolt {
      */
     public void setAsync(boolean async) {
         this.async = async;
-    }	
-    
+    }
+
     @Override
     public String toString() {
         return "KafkaBolt: {mapper: " + mapper +

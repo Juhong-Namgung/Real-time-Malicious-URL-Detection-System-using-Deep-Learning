@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.linkedin.urls.Url;
+import com.linkedin.urls.detection.UrlDetector;
+import com.linkedin.urls.detection.UrlDetectorOptions;
 import org.apache.storm.kafka.StringScheme;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -24,28 +27,30 @@ import com.esotericsoftware.minlog.Log;
 @SuppressWarnings("serial")
 public class ExtractURLBolt extends BaseRichBolt {
     OutputCollector collector;
-    private long tuple_size;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
-        tuple_size = 0l;
         this.collector = collector;
     }
 
     @Override
     public void execute(Tuple input) {
         String twitText = (String) input.getValueByField("str");
-        String url = null;
+        UrlDetector detector = new UrlDetector(twitText, UrlDetectorOptions.Default);
 
-        tuple_size += 1;
-
-        // extract URL using regex matching
-        url = extractURL(twitText);
-
-        if (!url.equals("")) {
+        List<Url> urlList = detector.detect();
+        for(Url url : urlList) {
             collector.emit(new Values(twitText, url));
-            System.out.println("Extract URL: " + url);
         }
+//        String url = null;
+//
+//        // extract URL using regex matching
+//        url = extractURL(twitText);
+//
+//        if (!url.equals("")) {
+//            collector.emit(new Values(twitText, url));
+//            System.out.println("Extract URL: " + url);
+//        }
     }
 
     @Override
