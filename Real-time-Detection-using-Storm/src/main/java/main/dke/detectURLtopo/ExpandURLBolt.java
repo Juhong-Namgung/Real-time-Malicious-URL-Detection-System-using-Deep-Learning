@@ -10,6 +10,8 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -24,6 +26,7 @@ import org.apache.storm.tuple.Values;
 
 @SuppressWarnings("serial")
 public class ExpandURLBolt extends BaseRichBolt {
+    private static Log LOG = LogFactory.getLog(ExpandURLBolt.class);
     OutputCollector collector;
 
     @Override
@@ -34,20 +37,16 @@ public class ExpandURLBolt extends BaseRichBolt {
     @Override
     public void execute(Tuple input) {
         String url = (String) input.getValueByField("url");
-        String expandURL;
+        String expandedURL;
 
-        expandURL = url;
+        try {
+            expandedURL = expandURL(url);
+            LOG.info("Expanded URL: " + expandedURL);
 
-        if (!expandURL.equals("")) {
-            try {
-                expandURL = expandURL(url);
-                System.out.println(expandURL);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            if (!(expandURL == null))
-                collector.emit(new Values(input.getValueByField("text"), expandURL));
+            if(expandedURL!=null)
+                collector.emit(new Values(input.getValueByField("text"), expandedURL));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -62,9 +61,10 @@ public class ExpandURLBolt extends BaseRichBolt {
 
         URLConnection conn = url.openConnection(Proxy.NO_PROXY);
         ((HttpURLConnection) conn).setInstanceFollowRedirects(false);
+        conn.setConnectTimeout(5000);
 
-        String expandURL = conn.getHeaderField("Location");
+        String expandedURL = conn.getHeaderField("Location");
 
-        return expandURL;
+        return expandedURL;
     }
 }

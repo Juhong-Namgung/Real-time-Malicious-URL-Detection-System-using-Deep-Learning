@@ -1,9 +1,13 @@
 package main.dke.detectURLtopo;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -13,41 +17,48 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
 public class ValidateURLBolt extends BaseRichBolt {
+    private static Log LOG = LogFactory.getLog(ValidateURLBolt.class);
     OutputCollector collector;
-    private long tuple_size;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
-        tuple_size = 0l;
         this.collector = collector;
     }
 
     @Override
     public void execute(Tuple input) {
         String expandURL = (String) input.getValueByField("expandurl");
-        String twitText = (String) input.getValueByField("text");
-        tuple_size += twitText.getBytes().length;
+        int httpCode;
 
-        if (!expandURL.equals("")) {
-            // Get HTTP Status Code
-            try {
-                URL url = new URL(expandURL);
-                HttpURLConnection http = (HttpURLConnection) url.openConnection();
-                int statusCode = http.getResponseCode();
-
-                if (statusCode >= 400) {
-                    System.out.println("#######URL: " + expandURL + " is not valid!! HTTP Status Code: " + statusCode);
-                } else {
-                    collector.emit(new Values(input.getValueByField("text"), expandURL));
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        httpCode = validateURL(expandURL);
+        if (httpCode >= 400) {
+            LOG.warn("URL [" + expandURL + "] is not valid!! HTTP Status Code: " + httpCode);
+        } else {
+            collector.emit(new Values(input.getValueByField("text"), expandURL));
         }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("text", "validurl"));
+    }
+
+    public int validateURL(String expandedURL) {
+        URL url = null;
+        int statusCode = 0;
+
+        // Get HTTP Status Code
+        try {
+            url = new URL(expandedURL);
+            HttpURLConnection http = (HttpURLConnection) url.openConnection();
+            http.setRequestMethod("HEAD");
+            http.setConnectTimeout(5000);
+            statusCode = http.getResponseCode();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return statusCode;
     }
 }

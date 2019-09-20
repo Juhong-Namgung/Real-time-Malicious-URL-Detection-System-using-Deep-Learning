@@ -1,10 +1,6 @@
 package main.dke.detectURLtopo;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,6 +31,7 @@ import org.apache.storm.kafka.bolt.mapper.FieldNameBasedTupleToKafkaMapper;
 import org.apache.storm.kafka.bolt.selector.DefaultTopicSelector;
 import org.apache.storm.spout.SchemeAsMultiScheme;
 import org.apache.storm.thrift.TException;
+import org.apache.storm.topology.SpoutDeclarer;
 import org.apache.storm.topology.TopologyBuilder;
 import org.apache.storm.tuple.ITuple;
 import org.apache.storm.utils.NimbusClient;
@@ -66,7 +63,7 @@ public class MainTopo {
     private static int testTime = 3;
 
     @Option(name = "--numWorkers", aliases = {"--workers"}, metaVar = "WORKERS", usage = "number of workers")
-    private static int numWorkers = 8;
+    private static int numWorkers = 12;
 
     @Option(name = "--modelPath", aliases = {"--model"}, metaVar = "MODEL PATH", usage = "path of deep learning model")
     private static String modelPath = "./resultModel";
@@ -76,6 +73,9 @@ public class MainTopo {
 
     @Option(name = "--brokerList", aliases = {"--broker"}, metaVar = "BROKER LIST", usage = "path of broker list, bootstrap servers")
     private static String bootstrap = "MN:9092,SN01:9092,SN02:9092,SN03:9092,SN04:9092,SN05:9092,SN06:9092,SN07:9092,SN08:9092";
+
+    @Option(name = "--parallelismHint", aliases = {"--parm"}, metaVar = "PARALLELISM HINT", usage = "number of spout, bolts(KafkaSpout-ExtractBolt-ExpandBolt-ValidateBolt-DetectBolt-KafkaBolt")
+    private static String paralleism = "1 2 4 2 2 1";
 
     public static void main(String[] args) throws NotAliveException, InterruptedException, TException {
         new MainTopo().topoMain(args);
@@ -136,12 +136,19 @@ public class MainTopo {
 			/* Topology Build */
         TopologyBuilder builder = new TopologyBuilder();
 
-        builder.setSpout("kafka-spout", kafkaSpout);
-        builder.setBolt("extract-bolt", extractBolt).shuffleGrouping("kafka-spout");
-        builder.setBolt("expand-bolt", expandBolt).shuffleGrouping("extract-bolt");
-		builder.setBolt("validate-bolt", validateBolt).shuffleGrouping("expand-bolt");
-		builder.setBolt("detect-bolt", detectBolt).shuffleGrouping("validate-bolt");
-        builder.setBolt("kafka-bolt", kafkabolt).shuffleGrouping("detect-bolt");            // Store Data to Kafka
+        ArrayList<Integer> parameters = new ArrayList<Integer>();
+        String[] params = paralleism.split(" ");
+
+        for(String p : params) {
+            parameters.add(Integer.parseInt(p));
+        }
+
+        builder.setSpout("kafka-spout", kafkaSpout, parameters.get(0));
+        builder.setBolt("extract-bolt", extractBolt, parameters.get(1)).shuffleGrouping("kafka-spout");
+        builder.setBolt("expand-bolt", expandBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
+		builder.setBolt("validate-bolt", validateBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
+		builder.setBolt("detect-bolt", detectBolt, parameters.get(4)).shuffleGrouping("validate-bolt");
+        builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
 
         Config config = new Config();
         config.setNumWorkers(numWorkers);

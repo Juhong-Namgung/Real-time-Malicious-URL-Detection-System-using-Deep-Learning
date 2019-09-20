@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 import com.linkedin.urls.Url;
 import com.linkedin.urls.detection.UrlDetector;
 import com.linkedin.urls.detection.UrlDetectorOptions;
+import org.apache.commons.logging.LogFactory;
 import org.apache.storm.kafka.StringScheme;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
@@ -26,6 +27,7 @@ import com.esotericsoftware.minlog.Log;
 
 @SuppressWarnings("serial")
 public class ExtractURLBolt extends BaseRichBolt {
+    private static org.apache.commons.logging.Log LOG = LogFactory.getLog(ExtractURLBolt.class);
     OutputCollector collector;
 
     @Override
@@ -40,7 +42,8 @@ public class ExtractURLBolt extends BaseRichBolt {
 
         List<Url> urlList = detector.detect();
         for(Url url : urlList) {
-            collector.emit(new Values(twitText, url));
+            collector.emit(new Values(twitText, url.toString()));
+            LOG.info("Extract URL: " + url);
         }
 //        String url = null;
 //

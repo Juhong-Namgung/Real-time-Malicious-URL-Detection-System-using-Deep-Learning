@@ -21,8 +21,8 @@ import org.apache.storm.shade.org.json.simple.JSONObject;
 
 public class DetectBolt extends BaseRichBolt {
     private static Log LOG = LogFactory.getLog(DetectBolt.class);
-
     OutputCollector collector;
+
     private int[][] urlTensor = new int[1][75];
     private String modelPath;       // Deep Learning Model Path
     private Printable printable;    //
@@ -40,6 +40,7 @@ public class DetectBolt extends BaseRichBolt {
     public void execute(Tuple input) {
         String validURL = (String) input.getValueByField("validurl");
         String detectResult;
+
         try (SavedModelBundle b = SavedModelBundle.load(modelPath, "serve")) {
             urlTensor = printable.convert2D(validURL);
             //create an input Tensor
@@ -70,16 +71,7 @@ public class DetectBolt extends BaseRichBolt {
         jsonObject.put("result", detectResult);
         jsonObject.put("time", System.currentTimeMillis());
 
-//        resultKafka += "text: " + input.getValueByField("text")
-//                + ", URL: " + validURL + ", result: " + detectResult +
-//                "time: " + System.currentTimeMillis();
         collector.emit(new Values(jsonObject));
-
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
