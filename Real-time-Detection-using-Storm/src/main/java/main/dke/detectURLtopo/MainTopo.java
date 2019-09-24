@@ -63,10 +63,7 @@ public class MainTopo {
     private static int testTime = 3;
 
     @Option(name = "--numWorkers", aliases = {"--workers"}, metaVar = "WORKERS", usage = "number of workers")
-    private static int numWorkers = 12;
-
-    @Option(name = "--modelPath", aliases = {"--model"}, metaVar = "MODEL PATH", usage = "path of deep learning model")
-    private static String modelPath = "./resultModel";
+    private static int numWorkers = 8;
 
     @Option(name = "--zookeeperHosts", aliases = {"--zookeeper"}, metaVar = "ZOOKEEPER HOST", usage = "path of zookeeper host")
     private static String zkhosts = "MN:42181,SN01:42181,SN02:42181,SN03:42181,SN04:42181,SN05:42181,SN06:42181,SN07:42181,SN08:42181";
@@ -126,7 +123,7 @@ public class MainTopo {
         ExtractURLBolt extractBolt = new ExtractURLBolt();
         ExpandURLBolt expandBolt = new ExpandURLBolt();
         ValidateURLBolt validateBolt = new ValidateURLBolt();
-        DetectBolt detectBolt = new DetectBolt(modelPath);
+        DetectBolt detectBolt = new DetectBolt();
 
 			/* KafkaBolt */
         MyKafkaBolt kafkabolt = new MyKafkaBolt().withProducerProperties(props)
