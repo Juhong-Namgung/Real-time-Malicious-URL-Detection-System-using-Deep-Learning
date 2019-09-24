@@ -48,7 +48,7 @@ public class DetectBolt extends BaseRichBolt {
         String detectResult;
 
         try (SavedModelBundle b = SavedModelBundle.load("./","serve")) {
-            urlTensor = printable.convert2D(validURL);
+            urlTensor = printable.convert(validURL);
             //create an input Tensor
             Tensor x = Tensor.create(urlTensor);
 

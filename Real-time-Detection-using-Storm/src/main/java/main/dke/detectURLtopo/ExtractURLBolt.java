@@ -2,8 +2,6 @@ package main.dke.detectURLtopo;
 
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.linkedin.urls.Url;
 import com.linkedin.urls.detection.UrlDetector;
@@ -37,36 +35,10 @@ public class ExtractURLBolt extends BaseRichBolt {
             collector.emit(new Values(twitText, url.toString()));
             LOG.info("Extract URL: " + url);
         }
-//        String url = null;
-//
-//        // extract URL using regex matching
-//        url = extractURL(twitText);
-//
-//        if (!url.equals("")) {
-//            collector.emit(new Values(twitText, url));
-//            System.out.println("Extract URL: " + url);
-//        }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("text", "url"));
-    }
-
-    public static String extractURL(String twit) {
-        String regex = "(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-
-        // pattern matching
-        try {
-            Pattern patt = Pattern.compile(regex);
-            Matcher matcher = patt.matcher(twit);
-
-            if (matcher.find()) {
-                return matcher.group();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
     }
 }

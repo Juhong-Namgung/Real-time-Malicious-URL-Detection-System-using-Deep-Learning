@@ -11,7 +11,7 @@ public class Printable {
 
     static String printable = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ ";
 
-    public int[][] convert2D(String url) {
+    public int[][] convert(String url) {
         int[][] result = new int[1][75];
 
         if (url.length() < 75) {
@@ -25,20 +25,4 @@ public class Printable {
         }
         return result;
     }
-
-    public static int[] convert(String url) {
-        int[] result = new int[75];
-
-        if (url.length() < 75) {
-            for (int i = 75 - url.length(), j = 0; i < 75; i++, j++)
-                result[i] = printable.indexOf(url.charAt(j)) + 1;
-            for (int i = 0; i < 74 - url.length(); i++)
-                result[i] = 0;
-        } else {
-            for (int j = 0; j < 75; j++)
-                result[j] = printable.indexOf(url.charAt(j + url.length() - 75)) + 1;
-        }
-        return result;
-    }
-
 }
