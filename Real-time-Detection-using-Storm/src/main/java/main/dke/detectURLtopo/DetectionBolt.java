@@ -20,8 +20,8 @@ import org.tensorflow.Session;
 import org.tensorflow.Tensor;
 import org.apache.storm.shade.org.json.simple.JSONObject;
 
-public class DetectBolt extends BaseRichBolt {
-    private static Log LOG = LogFactory.getLog(DetectBolt.class);
+public class DetectionBolt extends BaseRichBolt {
+    private static Log LOG = LogFactory.getLog(DetectionBolt.class);
     OutputCollector collector;
 
     private int[][] urlTensor = new int[1][75];

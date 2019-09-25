@@ -16,8 +16,8 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
-public class ValidateURLBolt extends BaseRichBolt {
-    private static Log LOG = LogFactory.getLog(ValidateURLBolt.class);
+public class ValidationURLBolt extends BaseRichBolt {
+    private static Log LOG = LogFactory.getLog(ValidationURLBolt.class);
     OutputCollector collector;
 
     @Override

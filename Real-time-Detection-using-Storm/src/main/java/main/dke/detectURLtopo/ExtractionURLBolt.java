@@ -16,8 +16,8 @@ import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
 @SuppressWarnings("serial")
-public class ExtractURLBolt extends BaseRichBolt {
-    private static org.apache.commons.logging.Log LOG = LogFactory.getLog(ExtractURLBolt.class);
+public class ExtractionURLBolt extends BaseRichBolt {
+    private static org.apache.commons.logging.Log LOG = LogFactory.getLog(ExtractionURLBolt.class);
     OutputCollector collector;
 
     @Override
