@@ -1,7 +1,10 @@
 package main.dke.detectURLtopo;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.Map;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.storm.task.OutputCollector;
@@ -33,21 +36,23 @@ public class DetectionBolt extends BaseRichBolt {
         printable = new Printable();
     }
 
+
     @Override
     public void execute(Tuple input) {
         String validURL = (String) input.getValueByField("validurl");
         String detectResult;
 
         try (SavedModelBundle b = SavedModelBundle.load(modelPath, "serve")) {
-            urlTensor = printable.convert2D(validURL);
+            urlTensor = printable.convert(validURL);
+
             //create an input Tensor
             Tensor x = Tensor.create(urlTensor);
 
             Session sess = b.session();
 
             Tensor result = sess.runner()
-                    .feed("main_input:0", x)
-                    .fetch("output/Sigmoid:0")
+                    .feed("main_input_4:0", x)
+                    .fetch("main_output_4/Sigmoid:0")
                     .run()
                     .get(0);
 
@@ -75,5 +80,4 @@ public class DetectionBolt extends BaseRichBolt {
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("message"));
     }
-
 }
