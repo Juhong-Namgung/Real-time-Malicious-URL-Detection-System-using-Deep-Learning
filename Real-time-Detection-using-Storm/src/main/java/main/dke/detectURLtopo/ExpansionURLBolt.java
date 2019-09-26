@@ -22,8 +22,8 @@ import org.apache.storm.tuple.Values;
  */
 
 @SuppressWarnings("serial")
-public class ExpandURLBolt extends BaseRichBolt {
-    private static Log LOG = LogFactory.getLog(ExpandURLBolt.class);
+public class ExpansionURLBolt extends BaseRichBolt {
+    private static Log LOG = LogFactory.getLog(ExpansionURLBolt.class);
     OutputCollector collector;
 
     @Override

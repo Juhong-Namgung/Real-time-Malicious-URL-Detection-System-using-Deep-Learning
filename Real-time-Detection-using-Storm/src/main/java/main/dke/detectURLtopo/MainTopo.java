@@ -74,6 +74,9 @@ public class MainTopo {
     @Option(name = "--parallelismHint", aliases = {"--parm"}, metaVar = "PARALLELISM HINT", usage = "number of spout, bolts(KafkaSpout-ExtractBolt-ExpandBolt-ValidateBolt-DetectBolt-KafkaBolt")
     private static String paralleism = "1 2 4 2 2 1";
 
+    @Option(name = "--modelPath", aliases = {"--model"} , metaVar = "TENSORFLOW MODEL PATH", usage ="path of deep learning model")
+    private static String modelPath = "./models/";
+
     public static void main(String[] args) throws NotAliveException, InterruptedException, TException {
         new MainTopo().topoMain(args);
     }
@@ -120,10 +123,10 @@ public class MainTopo {
         props.put("value.serializer", "org.springframework.kafka.support.serializer.JsonSerializer");
 
         KafkaSpout kafkaSpout = new KafkaSpout(kafkaSpoutConfig);
-        ExtractURLBolt extractBolt = new ExtractURLBolt();
-        ExpandURLBolt expandBolt = new ExpandURLBolt();
-        ValidateURLBolt validateBolt = new ValidateURLBolt();
-        DetectBolt detectBolt = new DetectBolt();
+        ExtractionURLBolt extractionBolt = new ExtractionURLBolt();
+        ExpansionURLBolt expansionBolt = new ExpansionURLBolt();
+        ValidationURLBolt validationBolt = new ValidationURLBolt();
+        DetectionBolt detectionBolt = new DetectionBolt(modelPath);
 
 			/* KafkaBolt */
         MyKafkaBolt kafkabolt = new MyKafkaBolt().withProducerProperties(props)
@@ -141,10 +144,10 @@ public class MainTopo {
         }
 
         builder.setSpout("kafka-spout", kafkaSpout, parameters.get(0));
-        builder.setBolt("extract-bolt", extractBolt, parameters.get(1)).shuffleGrouping("kafka-spout");
-        builder.setBolt("expand-bolt", expandBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
-		builder.setBolt("validate-bolt", validateBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
-		builder.setBolt("detect-bolt", detectBolt, parameters.get(4)).shuffleGrouping("validate-bolt");
+        builder.setBolt("extract-bolt", extractionBolt, parameters.get(1)).shuffleGrouping("kafka-spout");
+        builder.setBolt("expand-bolt", expansionBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
+		builder.setBolt("validate-bolt", validationBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
+		builder.setBolt("detect-bolt", detectionBolt, parameters.get(4)).shuffleGrouping("validate-bolt");
         builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
 
         Config config = new Config();

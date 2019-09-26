@@ -9,6 +9,7 @@ import com.linkedin.urls.Url;
 import com.linkedin.urls.detection.UrlDetector;
 import com.linkedin.urls.detection.UrlDetectorOptions;
 import org.apache.commons.logging.LogFactory;
+import org.apache.storm.kafka.StringScheme;
 import org.apache.storm.task.OutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -17,9 +18,13 @@ import org.apache.storm.tuple.Fields;
 import org.apache.storm.tuple.Tuple;
 import org.apache.storm.tuple.Values;
 
+/*
+ * Extract URL in Tweet using regular expression(regex)
+ */
+
 @SuppressWarnings("serial")
-public class ExtractURLBolt extends BaseRichBolt {
-    private static org.apache.commons.logging.Log LOG = LogFactory.getLog(ExtractURLBolt.class);
+public class ExtractionURLBolt extends BaseRichBolt {
+    private static org.apache.commons.logging.Log LOG = LogFactory.getLog(ExtractionURLBolt.class);
     OutputCollector collector;
 
     @Override
@@ -67,6 +72,7 @@ public class ExtractURLBolt extends BaseRichBolt {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         return "";
     }
 }
