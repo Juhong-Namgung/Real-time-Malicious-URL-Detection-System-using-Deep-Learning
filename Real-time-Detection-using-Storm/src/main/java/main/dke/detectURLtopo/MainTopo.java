@@ -77,6 +77,18 @@ public class MainTopo {
     @Option(name = "--modelPath", aliases = {"--model"} , metaVar = "TENSORFLOW MODEL PATH", usage ="path of deep learning model")
     private static String modelPath = "./models/";
 
+    @Option(name = "--sourceURL", aliases = {"--source"}, metaVar = "DB SOURCE URL", usage = "Source URL of MariaDB")
+    private static String sourceURL = "jdbc:mysql://localhost/test";
+
+    @Option(name = "--tableName", aliases = {"--table"}, metaVar = "DB TABLE NAME", usage = "name of MariaDB table")
+    private static String tableName = "test";
+
+    @Option(name = "--dataSourceUser", aliases = {"--user"}, metaVar = "DB USER NAME", usage = "name of MariaDB user")
+    private static String dataSourceUser = "user";
+
+    @Option(name = "--dataSourcePassword", aliases = {"--password"}, metaVar = "DB USER PASSWORD", usage = "password of MariaDB user")
+    private static String dataSourcePassword = "passwd";
+
     public static void main(String[] args) throws NotAliveException, InterruptedException, TException {
         new MainTopo().topoMain(args);
     }
@@ -133,6 +145,29 @@ public class MainTopo {
                 .withTopicSelector(new DefaultTopicSelector(outputTopic))
                 .withTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper());
 
+        	/* JDBC Bolt */
+        Map hikariConfigMap = Maps.newHashMap();
+        hikariConfigMap.put("dataSourceClassName", "com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
+        hikariConfigMap.put("dataSource.url", sourceURL);
+        hikariConfigMap.put("dataSource.user", dataSourceUser);
+        hikariConfigMap.put("dataSource.password", dataSourcePassword);
+
+        ConnectionProvider connectionProvider = new HikariCPConnectionProvider(hikariConfigMap);
+        connectionProvider.prepare();
+
+        List<Column> columnSchema = Lists.newArrayList(
+                new Column("text", java.sql.Types.VARCHAR),
+                new Column("url", java.sql.Types.VARCHAR),
+                new Column("result", java.sql.Types.CHAR),
+                new Column("timestamp", java.sql.Types.BIGINT)
+        );
+
+        JdbcMapper simpleJdbcMapper = new SimpleJdbcMapper(columnSchema);
+
+        JdbcInsertBolt insertDBBolt = new JdbcInsertBolt(connectionProvider, simpleJdbcMapper)
+                .withInsertQuery("insert into " + tableName + " (text, url, result, timestamp) values (?,?,?,?)")
+                .withQueryTimeoutSecs(30);
+
 			/* Topology Build */
         TopologyBuilder builder = new TopologyBuilder();
 
@@ -145,10 +180,11 @@ public class MainTopo {
 
         builder.setSpout("kafka-spout", kafkaSpout, parameters.get(0));
         builder.setBolt("extract-bolt", extractionBolt, parameters.get(1)).shuffleGrouping("kafka-spout");
-        builder.setBolt("expand-bolt", expansionBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
-		builder.setBolt("validate-bolt", validationBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
-		builder.setBolt("detect-bolt", detectionBolt, parameters.get(4)).shuffleGrouping("validate-bolt");
-        builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
+       // builder.setBolt("expand-bolt", expansionBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
+		//builder.setBolt("validate-bolt", validationBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
+		builder.setBolt("detect-bolt", detectionBolt, parameters.get(4)).shuffleGrouping("extract-bolt");
+        builder.setBolt("db-bolt", insertDBBolt, parameters.get(5)).shuffleGrouping("detect-bolt");
+//        builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
 
         Config config = new Config();
         config.setNumWorkers(numWorkers);
