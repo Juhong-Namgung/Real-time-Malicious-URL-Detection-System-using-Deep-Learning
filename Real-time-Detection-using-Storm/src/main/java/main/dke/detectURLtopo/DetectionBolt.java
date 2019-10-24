@@ -39,7 +39,7 @@ public class DetectionBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple input) {
-        String validURL = (String) input.getValueByField("validurl");
+        String validURL = (String) input.getValueByField("url");
         String detectResult;
 
         try (SavedModelBundle b = SavedModelBundle.load(modelPath, "serve")) {
@@ -67,17 +67,20 @@ public class DetectionBolt extends BaseRichBolt {
                 detectResult = "benign";
             }
         }
-        JSONObject jsonObject = new JSONObject();
-        jsonObject.put("text", input.getValueByField("text"));
-        jsonObject.put("URL", validURL);
-        jsonObject.put("result", detectResult);
-        jsonObject.put("time", System.currentTimeMillis());
+        collector.emit(new Values((String) input.getValueByField("text"), validURL, detectResult, System.currentTimeMillis()));
 
-        collector.emit(new Values(jsonObject));
+//        JSONObject jsonObject = new JSONObject();
+//        jsonObject.put("text", input.getValueByField("text"));
+//        jsonObject.put("URL", validURL);
+//        jsonObject.put("result", detectResult);
+//        jsonObject.put("time", System.currentTimeMillis());
+//
+//        collector.emit(new Values(jsonObject));
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("message"));
+        declarer.declare(new Fields("text", "url", "result", "timestamp"));
+//        declarer.declare(new Fields("message"));
     }
 }
