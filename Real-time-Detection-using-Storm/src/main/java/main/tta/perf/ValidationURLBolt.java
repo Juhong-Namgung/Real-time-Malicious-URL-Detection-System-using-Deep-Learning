@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class ValidationURLBolt extends BaseRichBolt {
     private static Log LOG = LogFactory.getLog(ValidationURLBolt.class);
-    OutputCollector collector;
+    private OutputCollector collector;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -27,10 +27,13 @@ public class ValidationURLBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple input) {
+        // Get msg from expansion_bolt
         String expandURL = (String) input.getValueByField("expandurl");
         int httpCode;
 
         httpCode = validateURL(expandURL);
+
+        // Client errors(>=400), Server errors(>=500)
         if (httpCode >= 400) {
             LOG.warn("URL [" + expandURL + "] is not valid!! HTTP Status Code: " + httpCode);
         } else {

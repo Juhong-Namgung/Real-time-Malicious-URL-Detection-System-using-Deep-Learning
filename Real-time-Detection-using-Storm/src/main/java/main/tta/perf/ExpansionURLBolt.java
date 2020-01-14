@@ -24,7 +24,7 @@ import java.util.Map;
 @SuppressWarnings("serial")
 public class ExpansionURLBolt extends BaseRichBolt {
     private static Log LOG = LogFactory.getLog(ExpansionURLBolt.class);
-    OutputCollector collector;
+    private OutputCollector collector;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -33,14 +33,16 @@ public class ExpansionURLBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple input) {
+        // Get msg from extraction_bolt
         String url = (String) input.getValueByField("url");
         String expandedURL;
 
         try {
+            // Get expanded URL
             expandedURL = expandURL(url);
             LOG.info("Expanded URL: " + expandedURL);
 
-            if(expandedURL!=null) {
+            if(expandedURL != null) {
                 collector.emit(new Values(input.getValueByField("text"), expandedURL));
                 collector.ack(input);
             }

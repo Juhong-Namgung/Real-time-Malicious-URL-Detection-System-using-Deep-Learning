@@ -22,7 +22,7 @@ import java.util.Map;
 
 public class DetectionBolt extends BaseRichBolt {
     private static Log LOG = LogFactory.getLog(DetectionBolt.class);
-    OutputCollector collector;
+    private OutputCollector collector;
 
     private int[][] urlTensor = new int[1][75];
     private String modelPath;       // Deep Learning Model Path
@@ -55,14 +55,16 @@ public class DetectionBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple input) {
+        // Get msg from validation_bolt
         String validURL = (String) input.getValueByField("validurl");
 
+        // Convert string URL to integer list
         urlTensor = printable.convert(validURL);
 
         //create an input Tensor
         Tensor x = Tensor.create(urlTensor);
 
-        // Running session
+        // Running session and get output tensor
         Tensor result = sess.runner()
                 .feed("main_input_4:0", x)
                 .fetch("main_output_4/Sigmoid:0")
@@ -72,37 +74,20 @@ public class DetectionBolt extends BaseRichBolt {
         float[][] prob = (float[][]) result.copyTo(new float[1][1]);
         LOG.info("Result value: " + prob[0][0]);
 
+        // Determine class(malicious or benign) use probability
         if (prob[0][0] >= 0.5) {
             LOG.warn(validURL + " is a malicious URL!!!");
-//                detectResult = "malicious";
             detectResult = "[ERROR] " + validURL + " is a Malicious URL!!!";
-
         } else {
-            LOG.info(validURL + " is a benign URL!!!");
-//                detectResult = "benign";
             detectResult = "[INFO] " + validURL + " is a Benign URL!!!";
         }
-        if (validURL.length() < 150) {
-//                collector.emit(new Values((String) input.getValueByField("text"), validURL, detectResult, System.currentTimeMillis()));
 
-            collector.emit(new Values(detectResult));
-            collector.ack(input);
-        }
+        collector.emit(new Values(detectResult));
+        collector.ack(input);
     }
-//          collector.emit(validURL, detectResult, System.currentTimeMillis()));
-
-//        JSONObject jsonObject = new JSONObject();
-//        jsonObject.put("text", input.getValueByField("text"));
-//        jsonObject.put("URL", validURL);
-//        jsonObject.put("result", detectResult);
-//        jsonObject.put("time", System.currentTimeMillis());
-//
-//        collector.emit(new Values(jsonObject));
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-//        declarer.declare(new Fields("text", "url", "result", "timestamp"));
-
         declarer.declare(new Fields("message"));
     }
 }
