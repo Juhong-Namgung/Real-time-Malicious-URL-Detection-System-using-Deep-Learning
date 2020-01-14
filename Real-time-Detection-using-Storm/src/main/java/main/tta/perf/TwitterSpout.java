@@ -94,6 +94,10 @@ public class TwitterSpout extends BaseRichSpout {
         }
     }
 
+    public void ack(Object msgId) {
+        super.ack(msgId);
+    }
+
     public void nextTuple() {
 
         for (long start = System.currentTimeMillis(); System.currentTimeMillis() - start < 5 * 1000; ) {
