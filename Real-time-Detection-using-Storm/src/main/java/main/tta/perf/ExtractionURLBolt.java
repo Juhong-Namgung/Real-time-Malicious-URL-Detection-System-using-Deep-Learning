@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 @SuppressWarnings("serial")
 public class ExtractionURLBolt extends BaseRichBolt {
     private static org.apache.commons.logging.Log LOG = LogFactory.getLog(ExtractionURLBolt.class);
-    OutputCollector collector;
+    private OutputCollector collector;
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
@@ -29,15 +29,19 @@ public class ExtractionURLBolt extends BaseRichBolt {
 
     @Override
     public void execute(Tuple input) {
+        // Get msg from kafka spout
         String twitText = (String) input.getValueByField("str");
+
+        // Use URL detection library from linkedin
         UrlDetector detector = new UrlDetector(twitText, UrlDetectorOptions.Default);
 
+        // Get URL list
         List<Url> urlList = detector.detect();
+        // Send each URL in list to next bolt
         for(Url url : urlList) {
             if(url.toString().contains("\"")) {
                 collector.emit(new Values(twitText, url.toString().split("\"")[0]));
                 LOG.info("Extract URL: " + url.toString().split("\"")[0]);
-
             }
             else {
                 collector.emit(new Values(twitText, url.toString()));
@@ -45,16 +49,6 @@ public class ExtractionURLBolt extends BaseRichBolt {
             }
             collector.ack(input);
         }
-
-//        String url = null;
-//
-//        // extract URL using regex matching
-//        url = extractURL(twitText);
-//
-//        if (!url.equals("")) {
-//            collector.emit(new Values(twitText, url));
-//            System.out.println("Extract URL: " + url);
-//        }
     }
 
     @Override
@@ -62,20 +56,4 @@ public class ExtractionURLBolt extends BaseRichBolt {
         declarer.declare(new Fields("text", "url"));
     }
 
-    public static String extractURL(String inputText) {
-        String regex = "(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
-
-        // pattern matching
-        try {
-            Pattern patt = Pattern.compile(regex);
-            Matcher matcher = patt.matcher(inputText);
-
-            if (matcher.find()) {
-                return matcher.group();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
 }
