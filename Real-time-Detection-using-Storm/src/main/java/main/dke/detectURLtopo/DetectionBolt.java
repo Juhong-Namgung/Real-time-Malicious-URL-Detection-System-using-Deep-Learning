@@ -26,16 +26,18 @@ public class DetectionBolt extends BaseRichBolt {
     private int[][] urlTensor = new int[1][75];
     private String modelPath;       // Deep Learning Model Path
     private Printable printable;    //
+    private String dst;              // 'kafka' or 'db'
 
-    public DetectionBolt(String path) {
+    public DetectionBolt(String path, String destination) {
         this.modelPath = path;
+        this.dst = destination;
     }
+
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         printable = new Printable();
     }
-
 
     @Override
     public void execute(Tuple input) {
@@ -67,20 +69,25 @@ public class DetectionBolt extends BaseRichBolt {
                 detectResult = "benign";
             }
         }
-        collector.emit(new Values((String) input.getValueByField("text"), validURL, detectResult, System.currentTimeMillis()));
+        if(dst.equals("db")) {
+            collector.emit(new Values((String) input.getValueByField("text"), validURL, detectResult, System.currentTimeMillis()));
+        } else if(dst.equals("kafka")) {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("text", input.getValueByField("text"));
+            jsonObject.put("URL", validURL);
+            jsonObject.put("result", detectResult);
+            jsonObject.put("time", System.currentTimeMillis());
 
-//        JSONObject jsonObject = new JSONObject();
-//        jsonObject.put("text", input.getValueByField("text"));
-//        jsonObject.put("URL", validURL);
-//        jsonObject.put("result", detectResult);
-//        jsonObject.put("time", System.currentTimeMillis());
-//
-//        collector.emit(new Values(jsonObject));
+            collector.emit(new Values(jsonObject));
+        }
     }
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        declarer.declare(new Fields("text", "url", "result", "timestamp"));
-//        declarer.declare(new Fields("message"));
+        if (dst.equals("db")) {
+            declarer.declare(new Fields("text", "url", "result", "timestamp"));
+        } else if (dst.equals("kafka")) {
+            declarer.declare(new Fields("message"));
+        }
     }
 }

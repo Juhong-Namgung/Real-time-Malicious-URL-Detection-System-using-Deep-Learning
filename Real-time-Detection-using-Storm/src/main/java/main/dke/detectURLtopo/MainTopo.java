@@ -74,7 +74,7 @@ public class MainTopo {
     @Option(name = "--parallelismHint", aliases = {"--parm"}, metaVar = "PARALLELISM HINT", usage = "number of spout, bolts(KafkaSpout-ExtractBolt-ExpandBolt-ValidateBolt-DetectBolt-KafkaBolt")
     private static String paralleism = "1 2 4 2 2 1";
 
-    @Option(name = "--modelPath", aliases = {"--model"} , metaVar = "TENSORFLOW MODEL PATH", usage ="path of deep learning model")
+    @Option(name = "--modelPath", aliases = {"--model"}, metaVar = "TENSORFLOW MODEL PATH", usage = "path of deep learning model")
     private static String modelPath = "./models/";
 
     @Option(name = "--sourceURL", aliases = {"--source"}, metaVar = "DB SOURCE URL", usage = "Source URL of MariaDB")
@@ -88,6 +88,10 @@ public class MainTopo {
 
     @Option(name = "--dataSourcePassword", aliases = {"--password"}, metaVar = "DB USER PASSWORD", usage = "password of MariaDB user")
     private static String dataSourcePassword = "passwd";
+
+    @Option(name = "--outputDestination", aliases = {"--dst"}, metaVar = "OUTPUT DESTINATION", usage = "destination of Topology")
+    private static String destination = "kafka";
+
 
     public static void main(String[] args) throws NotAliveException, InterruptedException, TException {
         new MainTopo().topoMain(args);
@@ -118,6 +122,10 @@ public class MainTopo {
         if (topologyName == null || topologyName.isEmpty()) {
             throw new IllegalArgumentException("Topology Name must be something");
         }
+        // Supporting destination: 'kafka', 'db(database)'
+        if (destination.equals("kafka") || destination.equals("db")) {
+            throw new IllegalArgumentException("Destination must be kafka or db");
+        }
 
 			/* Kafka Spout Configuration */
         BrokerHosts brokerHosts = new ZkHosts(zkhosts);
@@ -125,7 +133,7 @@ public class MainTopo {
         SpoutConfig kafkaSpoutConfig = new SpoutConfig(brokerHosts, inputTopic, "/" + inputTopic,
                 UUID.randomUUID().toString());
         kafkaSpoutConfig.scheme = new SchemeAsMultiScheme(new StringScheme());
-	
+
 			/* KafkaBolt Configuration */
         Properties props = new Properties();
         props.put("metadata.broker.list", bootstrap);
@@ -138,7 +146,7 @@ public class MainTopo {
         ExtractionURLBolt extractionBolt = new ExtractionURLBolt();
         ExpansionURLBolt expansionBolt = new ExpansionURLBolt();
         ValidationURLBolt validationBolt = new ValidationURLBolt();
-        DetectionBolt detectionBolt = new DetectionBolt(modelPath);
+        DetectionBolt detectionBolt = new DetectionBolt(modelPath, destination);
 
 			/* KafkaBolt */
         MyKafkaBolt kafkabolt = new MyKafkaBolt().withProducerProperties(props)
@@ -174,17 +182,20 @@ public class MainTopo {
         ArrayList<Integer> parameters = new ArrayList<Integer>();
         String[] params = paralleism.split(" ");
 
-        for(String p : params) {
+        for (String p : params) {
             parameters.add(Integer.parseInt(p));
         }
 
         builder.setSpout("kafka-spout", kafkaSpout, parameters.get(0));
         builder.setBolt("extract-bolt", extractionBolt, parameters.get(1)).shuffleGrouping("kafka-spout");
-       // builder.setBolt("expand-bolt", expansionBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
-		//builder.setBolt("validate-bolt", validationBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
-		builder.setBolt("detect-bolt", detectionBolt, parameters.get(4)).shuffleGrouping("extract-bolt");
-        builder.setBolt("db-bolt", insertDBBolt, parameters.get(5)).shuffleGrouping("detect-bolt");
-//        builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
+        // builder.setBolt("expand-bolt", expansionBolt, parameters.get(2)).shuffleGrouping("extract-bolt");
+        //builder.setBolt("validate-bolt", validationBolt, parameters.get(3)).shuffleGrouping("expand-bolt");
+        builder.setBolt("detect-bolt", detectionBolt, parameters.get(4)).shuffleGrouping("extract-bolt");
+        if (destination.equals("db")) {
+            builder.setBolt("db-bolt", insertDBBolt, parameters.get(5)).shuffleGrouping("detect-bolt");
+        } else if (destination.equals("kafka")) {
+            builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
+        }
 
         Config config = new Config();
         config.setNumWorkers(numWorkers);
