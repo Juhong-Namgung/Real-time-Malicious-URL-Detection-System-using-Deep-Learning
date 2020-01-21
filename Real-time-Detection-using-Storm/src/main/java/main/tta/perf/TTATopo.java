@@ -74,11 +74,12 @@ public class TTATopo {
      * Topology architecture
      * 1) KafkaSpout or InputSpout
      * 2) ExtractBolt
-     * 3) DetectBolt
-     * 4) KafkaBolt or ReportBolt
-     *
+     * 3) ExpansionBolt
+     * 4) ValidationBolt
+     * 5) DetectBolt
+     * 6) KafkaBolt or ReportBolt
      */
-    private static final String TOPOLOGY_NAME = "TTA_Performance_Topo";
+
     private static final String KAFKA_SPOUT_ID = "KafkaSpout";
     private static final String TWITTER_SPOUT_ID = "TwitterSpout";
     private static final String EXTRACTION_BOLT_ID = "ExtractionBolt";
