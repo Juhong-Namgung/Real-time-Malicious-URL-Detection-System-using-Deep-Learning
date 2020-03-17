@@ -9,14 +9,25 @@ class Saver:
         pass
 
     '''
-    Two method to save the trained model
+    Three method to save the trained model    
     
-    1) Use freeze session
+    1) Use SavedModelBuilder
     
-    2) Save json, h5 format
+    2) Use freeze session
+    
+    3) Save json, h5 format
     
     '''
 
+    ''' 1) Use SavedModelBuilder '''
+    def saved_model_builder(self, session, device, model_name):
+        builder = tf.saved_model.builder.SavedModelBuilder("../../output/saved_models/" + device + "/" + model_name + "/builder/")
+        #builder = tf.saved_model.builder.SavedModelBuilder("./output/model")
+        builder.add_meta_graph_and_variables(session, [tf.saved_model.tag_constants.SERVING])
+        builder.save()
+
+
+    ''' 1) Use freeze session '''
     def freeze_session(self, session, keep_var_names=None, output_names="main_output", clear_devices=True):
         """
         Freezes the state of a session into a pruned computation graph.
@@ -45,25 +56,30 @@ class Saver:
                 session, input_graph_def, output_names, freeze_var_names)
             return frozen_graph
 
-    def save_model_use_freezing(self, session, input_tensor, output_tensor):
+    def save_model_use_freezing(self, session, device, model_name, input_tensor, output_tensor):
         signature = tf.saved_model.signature_def_utils.build_signature_def(
             inputs = {'input': tf.saved_model.utils.build_tensor_info(input_tensor)},
             outputs = {'output': tf.saved_model.utils.build_tensor_info(output_tensor)},
         )
-        b = tf.saved_model.builder.SavedModelBuilder('./dir/')
+        b = tf.saved_model.builder.SavedModelBuilder("../../output/saved_models/" + device + "/" + model_name + "/frezzing/")
         b.add_meta_graph_and_variables(session,
                                        [tf.saved_model.tag_constants.SERVING],
                                        signature_def_map={tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: signature})
         b.save()
 
-    ''' 2) Save json, h5 format '''
+    ''' 3) Save json, h5 format '''
     # General save model to disk function
-    def save_model(self, model, fileModelJSON, fileWeights):
+    def save_model_general(self, model, fileModelJSON, fileWeights):
         if Path(fileModelJSON).is_file():
             os.remove(fileModelJSON)
         json_string = model.to_json()
+
         with open(fileModelJSON, 'w') as f:
             json.dump(json_string, f)
+
         if Path(fileWeights).is_file():
             os.remove(fileWeights)
+
         model.save_weights(fileWeights)
+
+
