@@ -19,7 +19,7 @@ class Preprocessor:
         # Load data
         DATA_HOME ='../../data/'
 
-        df = pd.read_csv(DATA_HOME + 'urls.csv',encoding='ISO-8859-1', sep=',')
+        df = pd.read_csv(DATA_HOME + 'urls.csv',encoding='ISO-8859-1', sep=';')
 
         # Initial Data Preparation URL
         # Step 1: Convert raw URL string in list of lists where characters that are contained in "printable" are sotred encoded as integer
