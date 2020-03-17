@@ -2,11 +2,12 @@
 # https://github.com/incertum/cyber-matrix-ai/tree/master/Malicious-URL-Detection-Deep-Learning
 
 # Load Libraries
+import os
+import sys
+
 import warnings
 
-from models import data_preprocessor
-from models import model_evaluator
-from models import model_saver
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import tensorflow as tf
 from keras import backend as K
 from keras import regularizers
@@ -14,6 +15,10 @@ from keras.layers import Input, ELU, Embedding, BatchNormalization, Convolution1
 from keras.layers.core import Dense, Dropout, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
+
+import data_preprocessor
+import model_evaluator
+import model_saver
 
 warnings.filterwarnings("ignore")
 config = tf.ConfigProto()
