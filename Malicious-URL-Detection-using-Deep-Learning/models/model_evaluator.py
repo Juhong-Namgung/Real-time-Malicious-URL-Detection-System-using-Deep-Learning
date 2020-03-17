@@ -7,6 +7,7 @@ from keras import backend as K
 from sklearn import metrics
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
+import os
 
 class Evaluator:
     def __init__(selfs):
@@ -31,6 +32,12 @@ class Evaluator:
         #plt.show()
         now = datetime.now()
         nowDatetime = now.strftime('%Y_%m_%d-%H%M%S')
+
+        try:
+            if not os.path.exists('../../output/validation_curves'):
+                os.makedirs('../../output/validation_curves')
+        except OSError:
+            print('Error: Creating directory!')
 
         plt.savefig('../../output/validation_curves/' + model_name + '_val_curve_' + nowDatetime + '.png')
 
@@ -129,6 +136,13 @@ class Evaluator:
         nowDatetime = now.strftime('%Y_%m_%d-%H%M%S')
         figure = plt.gcf()
         figure.set_size_inches(15, 15)
+
+        try:
+            if not os.path.exists('../../output/confusion_matrix'):
+                os.makedirs('../../output/confusion_matrix')
+        except OSError:
+            print('Error: Creating directory!')
+
         plt.savefig('../../output/confusion_matrix/' + model_name + '_confusion_matrix_' + nowDatetime + '.png', dpi=100)
 
     def precision(self, y_true, y_pred):
