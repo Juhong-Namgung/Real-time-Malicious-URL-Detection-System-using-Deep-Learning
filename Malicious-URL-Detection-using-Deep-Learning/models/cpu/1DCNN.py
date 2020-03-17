@@ -4,9 +4,9 @@
 # Load Libraries
 import warnings
 
-import data_preprocessor
-import model_evaluator
-import model_saver
+from models import data_preprocessor
+from models import model_evaluator
+from models import model_saver
 import tensorflow as tf
 from keras import backend as K
 from keras import regularizers
@@ -66,50 +66,54 @@ def conv_fully(max_len=75, emb_dim=32, max_vocab_len=100, W_reg=regularizers.l2(
     model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy', evaluator.fmeasure, evaluator.recall, evaluator.precision])
     return model
 
-with tf.device("/GPU:0"):
-    epochs = 5
-    batch_size = 64
+# with tf.device("/GPU:0"):
 
-    # Load data using model preprocessor
-    preprocessor = data_preprocessor.Preprocessor()
+# Keras Session Load
+sess = K.get_session()
+init = tf.global_variables_initializer()
+sess.run(init)
 
-    evaluator = model_evaluator.Evaluator()
+epochs = 5
+batch_size = 64
 
-    ''' Simple cross validation '''
-    X_train, X_test, y_train, y_test = preprocessor.load_data(kfold=False)
+# Load data using model preprocessor
+preprocessor = data_preprocessor.Preprocessor()
 
-    model_name = "1DCNN"
-    model = conv_fully()
-    history = model.fit({'main_input':X_train}, y_train, epochs=epochs, batch_size=batch_size, validation_split=0.11)
+evaluator = model_evaluator.Evaluator()
 
-    # Validation curves
-    evaluator.plot_validation_curves(model_name, history)
-    evaluator.print_validation_report(history)
+''' Simple cross validation '''
+X_train, X_test, y_train, y_test = preprocessor.load_data(kfold=False)
 
-    # Save confusion matrix
-    y_pred = model.predict(X_test, batch_size=64)
-    evaluator.plot_confusion_matrix(model_name, y_test, y_pred, title='Confusion matrix', normalize=True)
+model_name = "1DCNN"
+model = conv_fully()
+history = model.fit({'main_input':X_train}, y_train, epochs=epochs, batch_size=batch_size, validation_split=0.11)
 
-    # Experimental result
-    evaluator.calculate_measure(model, X_test, y_test)
+# Validation curves
+evaluator.plot_validation_curves(model_name, history)
+evaluator.print_validation_report(history)
 
-    # Save trained model
-    saver = model_saver.Saver()
-    saver.save_model(model, "../../output/models/" + model_name + "/" + model_name + ".json", "../../output/models/" + model_name + "/" + model_name + ".h5")
+# Save confusion matrix
+y_pred = model.predict(X_test, batch_size=64)
+evaluator.plot_confusion_matrix(model_name, y_test, y_pred, title='Confusion matrix', normalize=True)
 
-    #loss, accuracy = (model.evaluate(X_test, y_test, verbose=1))
+# Experimental result
+evaluator.calculate_measure(model, X_test, y_test)
 
-    ''' K-fold cross validation '''
-    # # Use 5-fold cross validation
-    # accuracy = []
-    # X, target = preprocessor.load_data(kfold=True)
-    # kfold = KFold(n_splits=5, shuffle=True, random_state=33)
-    # for train, validation in kfold.split(X, target):
-    #     model = conv_fully()
-    #     model.fit({'main_input':X[train]}, target[train], epochs=epochs, batch_size=batch_size)
-    #
-    #     loss, k_accuracy = (model.evaluate(X[validation], target[validation],verbose=1))
-    #     accuracy.append(k_accuracy)
-    #
-    # print('\nK-fold cross validation Accuracy: {}'.format(accuracy))
-    # print('\nK-fold cross validation Accuracy mean: ', np.array(accuracy).mean())
+# Save trained model
+saver = model_saver.Saver()
+saver.saved_model_builder(sess, "cpu", model_name)
+
+''' K-fold cross validation '''
+# # Use 5-fold cross validation
+# accuracy = []
+# X, target = preprocessor.load_data(kfold=True)
+# kfold = KFold(n_splits=5, shuffle=True, random_state=33)
+# for train, validation in kfold.split(X, target):
+#     model = conv_fully()
+#     model.fit({'main_input':X[train]}, target[train], epochs=epochs, batch_size=batch_size)
+#
+#     loss, k_accuracy = (model.evaluate(X[validation], target[validation],verbose=1))
+#     accuracy.append(k_accuracy)
+#
+# print('\nK-fold cross validation Accuracy: {}'.format(accuracy))
+# print('\nK-fold cross validation Accuracy mean: ', np.array(accuracy).mean())
