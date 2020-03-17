@@ -23,7 +23,7 @@ class Saver:
     def saved_model_builder(self, session, device, model_name):
         try:
             if not os.path.exists('../../output/saved_models/' + device):
-                os.makedirs('../../output/saved_models' + device)
+                os.makedirs('../../output/saved_models/' + device)
         except OSError:
             print('Error: Creating directory!')
         builder = tf.saved_model.builder.SavedModelBuilder("../../output/saved_models/" + device + "/" + model_name + "/builder/")
