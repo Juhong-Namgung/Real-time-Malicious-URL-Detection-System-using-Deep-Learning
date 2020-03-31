@@ -69,10 +69,10 @@ public class MainTopo {
     private static String zkhosts = "MN:42181,SN01:42181,SN02:42181,SN03:42181,SN04:42181,SN05:42181,SN06:42181,SN07:42181,SN08:42181";
 
     @Option(name = "--brokerList", aliases = {"--broker"}, metaVar = "BROKER LIST", usage = "path of broker list, bootstrap servers")
-    private static String bootstrap = "MN:9092,SN01:9092,SN02:9092,SN03:9092,SN04:9092,SN05:9092,SN06:9092,SN07:9092,SN08:9092";
+    private static String bootstrap = "MN:49092,SN01:49092,SN02:49092,SN03:49092,SN04:49092,SN05:49092,SN06:49092,SN07:49092,SN08:49092";
 
     @Option(name = "--parallelismHint", aliases = {"--parm"}, metaVar = "PARALLELISM HINT", usage = "number of spout, bolts(KafkaSpout-ExtractBolt-ExpandBolt-ValidateBolt-DetectBolt-KafkaBolt")
-    private static String paralleism = "1 2 4 2 2 1";
+    private static String parallelism = "1 2 4 2 2 1";
 
     @Option(name = "--modelPath", aliases = {"--model"}, metaVar = "TENSORFLOW MODEL PATH", usage = "path of deep learning model")
     private static String modelPath = "./models/";
@@ -123,7 +123,7 @@ public class MainTopo {
             throw new IllegalArgumentException("Topology Name must be something");
         }
         // Supporting destination: 'kafka', 'db(database)'
-        if (destination.equals("kafka") || destination.equals("db")) {
+        if (!(destination.equals("kafka") || destination.equals("db"))) {
             throw new IllegalArgumentException("Destination must be kafka or db");
         }
 
@@ -147,40 +147,44 @@ public class MainTopo {
         ExpansionURLBolt expansionBolt = new ExpansionURLBolt();
         ValidationURLBolt validationBolt = new ValidationURLBolt();
         DetectionBolt detectionBolt = new DetectionBolt(modelPath, destination);
+        MyKafkaBolt kafkabolt = null;
+        JdbcInsertBolt insertDBBolt = null;
 
+        if (destination.equals("kafka")) {
 			/* KafkaBolt */
-        MyKafkaBolt kafkabolt = new MyKafkaBolt().withProducerProperties(props)
-                .withTopicSelector(new DefaultTopicSelector(outputTopic))
-                .withTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper());
+            kafkabolt = new MyKafkaBolt().withProducerProperties(props)
+                    .withTopicSelector(new DefaultTopicSelector(outputTopic))
+                    .withTupleToKafkaMapper(new FieldNameBasedTupleToKafkaMapper());
+        } else if(destination.equals("db")) {
 
         	/* JDBC Bolt */
-        Map hikariConfigMap = Maps.newHashMap();
-        hikariConfigMap.put("dataSourceClassName", "com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
-        hikariConfigMap.put("dataSource.url", sourceURL);
-        hikariConfigMap.put("dataSource.user", dataSourceUser);
-        hikariConfigMap.put("dataSource.password", dataSourcePassword);
+            Map hikariConfigMap = Maps.newHashMap();
+            hikariConfigMap.put("dataSourceClassName", "com.mysql.jdbc.jdbc2.optional.MysqlDataSource");
+            hikariConfigMap.put("dataSource.url", sourceURL);
+            hikariConfigMap.put("dataSource.user", dataSourceUser);
+            hikariConfigMap.put("dataSource.password", dataSourcePassword);
 
-        ConnectionProvider connectionProvider = new HikariCPConnectionProvider(hikariConfigMap);
-        connectionProvider.prepare();
+            ConnectionProvider connectionProvider = new HikariCPConnectionProvider(hikariConfigMap);
+            connectionProvider.prepare();
 
-        List<Column> columnSchema = Lists.newArrayList(
-                new Column("text", java.sql.Types.VARCHAR),
-                new Column("url", java.sql.Types.VARCHAR),
-                new Column("result", java.sql.Types.CHAR),
-                new Column("timestamp", java.sql.Types.BIGINT)
-        );
 
-        JdbcMapper simpleJdbcMapper = new SimpleJdbcMapper(columnSchema);
+            List<Column> columnSchema = Lists.newArrayList(
+                    new Column("text", java.sql.Types.VARCHAR),
+                    new Column("url", java.sql.Types.VARCHAR),
+                    new Column("result", java.sql.Types.CHAR),
+                    new Column("timestamp", java.sql.Types.BIGINT)
+            );
 
-        JdbcInsertBolt insertDBBolt = new JdbcInsertBolt(connectionProvider, simpleJdbcMapper)
-                .withInsertQuery("insert into " + tableName + " (text, url, result, timestamp) values (?,?,?,?)")
-                .withQueryTimeoutSecs(30);
-
+            JdbcMapper simpleJdbcMapper = new SimpleJdbcMapper(columnSchema);
+            insertDBBolt = new JdbcInsertBolt(connectionProvider, simpleJdbcMapper)
+                    .withInsertQuery("insert into " + tableName + " (text, url, result, timestamp) values (?,?,?,?)")
+                    .withQueryTimeoutSecs(30);
+        }
 			/* Topology Build */
         TopologyBuilder builder = new TopologyBuilder();
 
         ArrayList<Integer> parameters = new ArrayList<Integer>();
-        String[] params = paralleism.split(" ");
+        String[] params = parallelism.split(" ");
 
         for (String p : params) {
             parameters.add(Integer.parseInt(p));
@@ -194,7 +198,7 @@ public class MainTopo {
         if (destination.equals("db")) {
             builder.setBolt("db-bolt", insertDBBolt, parameters.get(5)).shuffleGrouping("detect-bolt");
         } else if (destination.equals("kafka")) {
-            builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).shuffleGrouping("detect-bolt");            // Store Data to Kafka
+            builder.setBolt("kafka-bolt", kafkabolt, parameters.get(5)).    shuffleGrouping("detect-bolt");            // Store Data to Kafka
         }
 
         Config config = new Config();

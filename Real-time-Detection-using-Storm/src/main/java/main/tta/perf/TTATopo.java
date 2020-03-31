@@ -53,7 +53,7 @@ public class TTATopo {
     private static String modelPath = "./models/";
 
     @Option(name = "--parallelismHint", aliases = {"--parm"}, metaVar = "PARALLELISM HINT", usage = "number of spout, bolts(KafkaSpout-ExtractBolt-ExpandBolt-ValidateBolt-DetectBolt-KafkaBolt")
-    private static String paralleism = "1 2 4 1";
+    private static String parallelism = "1 2 4 4 2 1";
 
     @Option(name = "--testTime", aliases = {"--t"}, metaVar = "TIME", usage = "how long should run topology")
     private static int testTime = 3;
@@ -140,7 +140,7 @@ public class TTATopo {
         TopologyBuilder builder = new TopologyBuilder();
 
         ArrayList<Integer> parameters = new ArrayList<Integer>();
-        String[] params = paralleism.split(" ");
+        String[] params = parallelism.split(" ");
 
         for(String p : params) {
             parameters.add(Integer.parseInt(p));
