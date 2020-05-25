@@ -32,7 +32,7 @@ class Saver:
         builder.save()
 
 
-    ''' 1) Use freeze session '''
+    ''' 2) Use freeze session '''
     def freeze_session(self, session, keep_var_names=None, output_names="main_output", clear_devices=True):
         """
         Freezes the state of a session into a pruned computation graph.
