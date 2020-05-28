@@ -9,9 +9,10 @@ import warnings
 
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import tensorflow as tf
+from datetime import datetime
 from keras import backend as K
 from keras import regularizers
-from keras.layers import Input, ELU, Embedding, BatchNormalization, Convolution1D, concatenate
+from keras.layers import Input, ELU, Embedding, BatchNormalization, Convolution1D, concatenate, MaxPooling1D
 from keras.layers.core import Dense, Dropout, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
@@ -37,6 +38,7 @@ def conv_fully(max_len=75, emb_dim=32, max_vocab_len=100, W_reg=regularizers.l2(
     def get_conv_layer(emb, kernel_size=5, filters=256):
         # Conv layer
         conv = Convolution1D(kernel_size=kernel_size, filters=filters, border_mode='same')(emb)
+        conv = MaxPooling1D(5)(conv)
         conv = ELU()(conv)
         conv = Lambda(sum_1d, output_shape=(filters,))(conv)
         conv = Dropout(0.5)(conv)
@@ -78,7 +80,7 @@ sess = K.get_session()
 init = tf.global_variables_initializer()
 sess.run(init)
 
-epochs = 5
+epochs = 10
 batch_size = 64
 
 # Load data using model preprocessor
@@ -91,7 +93,12 @@ X_train, X_test, y_train, y_test = preprocessor.load_data(kfold=False)
 
 model_name = "1DCNN"
 model = conv_fully()
+
+dt_start_train = datetime.now()
+
 history = model.fit({'main_input':X_train}, y_train, epochs=epochs, batch_size=batch_size, validation_split=0.11)
+
+dt_end_train = datetime.now()
 
 # Validation curves
 evaluator.plot_validation_curves(model_name, history)
@@ -107,6 +114,9 @@ evaluator.calculate_measure(model, X_test, y_test)
 # Save trained model
 saver = model_saver.Saver()
 saver.saved_model_builder(sess, "cpu", model_name)
+
+# Print Training and predicting time
+print('Train time: ' + str((dt_end_train - dt_start_train)))
 
 ''' K-fold cross validation '''
 # # Use 5-fold cross validation
