@@ -70,7 +70,7 @@ def conv_fully(max_len=75, emb_dim=32, max_vocab_len=100, W_reg=regularizers.l2(
     # Compile model and define optimizer
     model = Model(input=[main_input], output=[output])
     adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
-    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy', evaluator.fmeasure, evaluator.recall, evaluator.precision])
+    model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy', evaluator.recall, evaluator.precision, evaluator.fmeasure])
     return model
 
 # with tf.device("/GPU:0"):
@@ -111,9 +111,17 @@ evaluator.plot_confusion_matrix(model_name, y_test, y_pred, title='Confusion mat
 # Experimental result
 evaluator.calculate_measure(model, X_test, y_test)
 
+result = model.evaluate(X_test, y_test, batch_size=64)
+result_dic = dict(zip(model.metrics_names, result))
+
+print('\nAccuracy: {}\n'
+      'Precision: {}\nRecall: {}\n F-1Score {}\n'
+      .format(result_dic['acc'],
+              result_dic['precision'], result_dic['recall'], result_dic['fmeasure']))
+
 # Save trained model
 saver = model_saver.Saver()
-saver.saved_model_builder(sess, "cpu", model_name)
+# saver.saved_model_builder(sess, "cpu", model_name)
 
 # Print Training and predicting time
 print('Train time: ' + str((dt_end_train - dt_start_train)))

@@ -52,7 +52,8 @@ class Evaluator:
     # Calculate measure(categorical accuracy, precision, recall, f1-score)
     def calculate_measure(self, model, X_test, y_test):
         y_pred_class_prob = model.predict(X_test, batch_size=64)
-        y_pred_class = np.argmax(y_pred_class_prob, axis=1)
+        y_pred_class = (y_pred_class_prob >= 0.5).astype(np.int)
+
         y_true_class = np.array(y_test)
 
         # classification report(sklearn)
@@ -75,8 +76,8 @@ class Evaluator:
                 if dga_int == i:
                     classes_str.append(dga_str)
 
-        y_pred_class = np.argmax(y_pred, axis=1)
-        y_true_class = np.array(y_true)
+        y_pred_class = (y_pred >= 0.5).astype(np.int)
+        y_true_class = y_true
 
         """
         This function prints and plots the confusion matrix.
@@ -159,7 +160,7 @@ class Evaluator:
 
     def fbeta_score(self, y_true, y_pred, beta=1):
         if beta < 0:
-            raise ValueError('The lowest choosable beta is zero (only precision).')
+            raise ValueError('The lowest chooseable beta is zero (only precision).')
 
             # If there are no true positives, fix the F score at 0 like sklearn.
         if K.sum(K.round(K.clip(y_true, 0, 1))) == 0:
