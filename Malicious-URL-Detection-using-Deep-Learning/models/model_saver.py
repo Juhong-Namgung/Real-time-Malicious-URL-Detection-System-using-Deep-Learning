@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-
+import shutil
 import tensorflow as tf
 
 class Saver:
@@ -28,9 +28,10 @@ class Saver:
         try:
             if not os.path.exists(device_path):
                 os.makedirs(device_path)
+            # 기존 파일 삭제
             if os.path.exists(model_path):
-                os.remove(model_path)
-                os.removedirs(model_path)
+                shutil.rmtree(model_path)
+
 
         except OSError as e:
             print(e)
