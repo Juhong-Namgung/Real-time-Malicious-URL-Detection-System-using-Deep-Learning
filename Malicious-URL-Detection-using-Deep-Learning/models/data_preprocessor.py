@@ -26,7 +26,7 @@ class Preprocessor:
         url_int_tokens = [[printable.index(x) + 1 for x in url if x in printable] for url in df.url]
 
         # Step 2: Cut URL string at max_len or pad with zeros if shorter
-        max_len = 100
+        max_len = 80
         X = sequence.pad_sequences(url_int_tokens, maxlen=max_len)
 
         # Step 3: Extract labels form df to numpy array
