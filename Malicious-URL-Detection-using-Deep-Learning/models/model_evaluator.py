@@ -52,7 +52,7 @@ class Evaluator:
     # Calculate measure(categorical accuracy, precision, recall, f1-score)
     def calculate_measure(self, model, X_test, y_test):
         y_pred_class_prob = model.predict(X_test, batch_size=64)
-        y_pred_class = np.argmax(y_pred_class_prob, axis=1)
+        y_pred_class = (y_pred_class_prob >= 0.5).astype(np.int)
         y_true_class = np.array(y_test)
 
         # classification report(sklearn)
@@ -60,7 +60,7 @@ class Evaluator:
 
         print ("precision" , metrics.precision_score(y_true_class, y_pred_class, average = 'weighted'))
         print ("recall" , metrics.recall_score(y_true_class, y_pred_class, average = 'weighted'))
-        print ("f1" , metrics.f1_score(y_true_class, y_pred_class, average = 'weighted'))
+        print ("F1" , metrics.f1_score(y_true_class, y_pred_class, average = 'weighted'))
 
     # save confusion matrix(.png)
     def plot_confusion_matrix(self, model_name, y_true, y_pred,
@@ -75,7 +75,7 @@ class Evaluator:
                 if dga_int == i:
                     classes_str.append(dga_str)
 
-        y_pred_class = np.argmax(y_pred, axis=1)
+        y_pred_class = (y_pred >= 0.5).astype(np.int)
         y_true_class = np.array(y_true)
 
         """

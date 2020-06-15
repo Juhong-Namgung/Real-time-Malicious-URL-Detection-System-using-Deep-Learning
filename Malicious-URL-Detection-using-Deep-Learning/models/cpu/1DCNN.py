@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import tensorflow as tf
 from keras import backend as K
 from keras import regularizers
-from keras.layers import Input, ELU, Embedding, BatchNormalization, Convolution1D, concatenate
+from keras.layers import Input, ELU, Embedding, BatchNormalization, Convolution1D, MaxPooling1D, concatenate
 from keras.layers.core import Dense, Dropout, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
@@ -39,6 +39,7 @@ def conv_fully(max_len=80, emb_dim=32, max_vocab_len=128, W_reg=regularizers.l2(
     def get_conv_layer(emb, kernel_size=5, filters=256):
         # Conv layer
         conv = Convolution1D(kernel_size=kernel_size, filters=filters, border_mode='same')(emb)
+        conv = MaxPooling1D(5)(conv)
         conv = ELU()(conv)
         conv = Lambda(sum_1d, output_shape=(filters,))(conv)
         conv = Dropout(0.5)(conv)

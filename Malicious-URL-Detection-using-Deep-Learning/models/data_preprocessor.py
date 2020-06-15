@@ -30,7 +30,14 @@ class Preprocessor:
         X = sequence.pad_sequences(url_int_tokens, maxlen=max_len)
 
         # Step 3: Extract labels form df to numpy array
-        target = np.array(df['class'])     # 'class' 컬럼 읽어옴
+        label_arr = []
+        for i in df['class']:
+            if i == 0:
+                label_arr.append(0)
+            else :
+                label_arr.append(1)
+
+        target = np.array(label_arr)
 
         if kfold:
             return X, target

@@ -21,13 +21,22 @@ class Saver:
 
     ''' 1) Use SavedModelBuilder '''
     def saved_model_builder(self, session, device, model_name):
+
+        device_path = '../../output/saved_models/' + device
+        model_path = device_path + "/" + model_name
+
         try:
-            if not os.path.exists('../../output/saved_models/' + device):
-                os.makedirs('../../output/saved_models/' + device)
-        except OSError:
-            print('Error: Creating directory!')
-        builder = tf.saved_model.builder.SavedModelBuilder("../../output/saved_models/" + device + "/" + model_name + "/builder/")
-        #builder = tf.saved_model.builder.SavedModelBuilder("./output/model")
+            if not os.path.exists(device_path):
+                os.makedirs(device_path)
+            if os.path.exists(model_path):
+                os.remove(model_path)
+                os.removedirs(model_path)
+
+        except OSError as e:
+            print(e)
+            print('Error')
+
+        builder = tf.saved_model.builder.SavedModelBuilder(model_path)
         builder.add_meta_graph_and_variables(session, [tf.saved_model.tag_constants.SERVING])
         builder.save()
 
