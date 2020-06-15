@@ -15,6 +15,8 @@ from keras.layers import Input, ELU, Embedding, BatchNormalization, Convolution1
 from keras.layers.core import Dense, Dropout, Lambda
 from keras.models import Model
 from keras.optimizers import Adam
+import time
+from datetime import datetime
 
 import data_preprocessor
 import model_evaluator
@@ -23,7 +25,7 @@ import model_saver
 warnings.filterwarnings("ignore")
 
 # 1D Convolution and Fully Connected Layers
-def conv_fully(max_len=100, emb_dim=32, max_vocab_len=128, W_reg=regularizers.l2(1e-4)):
+def conv_fully(max_len=80, emb_dim=32, max_vocab_len=128, W_reg=regularizers.l2(1e-4)):
     # Input
     main_input = Input(shape=(max_len,), dtype='int32', name='main_input')
 
@@ -91,7 +93,14 @@ X_train, X_test, y_train, y_test = preprocessor.load_data(kfold=False)
 
 model_name = "1DCNN"
 model = conv_fully()
+
+''' Start training'''
+dt_start_train = datetime.now()
+
 history = model.fit({'main_input':X_train}, y_train, epochs=epochs, batch_size=batch_size, validation_split=0.11)
+
+dt_end_train = datetime.now()
+
 
 # Validation curves
 evaluator.plot_validation_curves(model_name, history)
@@ -104,21 +113,9 @@ evaluator.plot_confusion_matrix(model_name, y_test, y_pred, title='Confusion mat
 # Experimental result
 evaluator.calculate_measure(model, X_test, y_test)
 
+
 # Save trained model
 saver = model_saver.Saver()
 saver.saved_model_builder(sess, "cpu", model_name)
 
-''' K-fold cross validation '''
-# # Use 5-fold cross validation
-# accuracy = []
-# X, target = preprocessor.load_data(kfold=True)
-# kfold = KFold(n_splits=5, shuffle=True, random_state=33)
-# for train, validation in kfold.split(X, target):
-#     model = conv_fully()
-#     model.fit({'main_input':X[train]}, target[train], epochs=epochs, batch_size=batch_size)
-#
-#     loss, k_accuracy = (model.evaluate(X[validation], target[validation],verbose=1))
-#     accuracy.append(k_accuracy)
-#
-# print('\nK-fold cross validation Accuracy: {}'.format(accuracy))
-# print('\nK-fold cross validation Accuracy mean: ', np.array(accuracy).mean())
+print('Train time: ' + str((dt_end_train - dt_start_train)))
