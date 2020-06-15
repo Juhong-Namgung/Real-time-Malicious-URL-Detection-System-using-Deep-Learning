@@ -23,7 +23,7 @@ import model_saver
 warnings.filterwarnings("ignore")
 
 # 1D Convolution and Fully Connected Layers
-def conv_fully(max_len=75, emb_dim=32, max_vocab_len=100, W_reg=regularizers.l2(1e-4)):
+def conv_fully(max_len=100, emb_dim=32, max_vocab_len=128, W_reg=regularizers.l2(1e-4)):
     # Input
     main_input = Input(shape=(max_len,), dtype='int32', name='main_input')
 
