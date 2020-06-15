@@ -78,7 +78,7 @@ sess = K.get_session()
 init = tf.global_variables_initializer()
 sess.run(init)
 
-epochs = 5
+epochs = 10
 batch_size = 64
 
 # Load data using model preprocessor

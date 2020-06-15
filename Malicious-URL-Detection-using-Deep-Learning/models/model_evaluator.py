@@ -159,7 +159,7 @@ class Evaluator:
 
     def fbeta_score(self, y_true, y_pred, beta=1):
         if beta < 0:
-            raise ValueError('The lowest choosable beta is zero (only precision).')
+            raise ValueError('The lowest chooseable beta is zero (only precision).')
 
             # If there are no true positives, fix the F score at 0 like sklearn.
         if K.sum(K.round(K.clip(y_true, 0, 1))) == 0:
