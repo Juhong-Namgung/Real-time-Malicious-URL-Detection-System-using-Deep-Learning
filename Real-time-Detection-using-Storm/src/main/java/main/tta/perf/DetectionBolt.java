@@ -25,29 +25,25 @@ public class DetectionBolt extends BaseRichBolt {
     private OutputCollector collector;
 
     private int[][] urlTensor = new int[1][75];
-    private String modelPath;       // Deep Learning Model Path
     private Printable printable;    //
     private SavedModelBundle b;
     private String detectResult = null;
     private Session sess;
-
-    public DetectionBolt(String path) {
-        this.modelPath = path;
-    }
 
     @Override
     public void prepare(Map stormConf, TopologyContext context, OutputCollector collector) {
         this.collector = collector;
         printable = new Printable();
 
-        ClassPathResource resource = new ClassPathResource("models/cnn/saved_model.pb");
+        File file = new File("./variables");
+        file.mkdir();
 
-        try {
-            File modelFile = new File("./saved_model.pb");
-            IOUtils.copy(resource.getInputStream(), new FileOutputStream(modelFile));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // Load pre-trained deep learning model
+
+        getResource("models/cnn/saved_model.pb", "./saved_model.pb");
+        getResource("models/cnn/variables/variables.data-00000-of-00001", "./variables/variables.data-00000-of-00001");
+        getResource("models/cnn/variables/variables.index", "./variables/variables.index");
+
         b = SavedModelBundle.load("./", "serve");
         sess = b.session();
     }
@@ -61,13 +57,13 @@ public class DetectionBolt extends BaseRichBolt {
         // Convert string URL to integer list
         urlTensor = printable.convert(validURL);
 
-        //create an input Tensor
+        // create an input Tensor
         Tensor x = Tensor.create(urlTensor);
 
         // Running session and get output tensor
         Tensor result = sess.runner()
-                .feed("main_input_4:0", x)
-                .fetch("main_output_4/Sigmoid:0")
+                .feed("main_input:0", x)
+                .fetch("main_output/Sigmoid:0")
                 .run()
                 .get(0);
 
@@ -89,5 +85,15 @@ public class DetectionBolt extends BaseRichBolt {
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
         declarer.declare(new Fields("message"));
+    }
+
+    public void getResource(String resourcePath, String filePath) {
+        ClassPathResource resourceModel = new ClassPathResource(resourcePath);
+        try {
+            File modelFile = new File(filePath);
+            IOUtils.copy(resourceModel.getInputStream(), new FileOutputStream(modelFile));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

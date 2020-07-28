@@ -31,7 +31,7 @@ public class TTATopo {
     @Option(name = "--help", aliases = {"-h"}, usage = "print help message")
     private boolean _help = false;
 
-    @Option(name = "--topologyName", aliases = {"--name"}, metaVar = "TOPOLOGIE NAME", usage = "name of topology")
+    @Option(name = "--topologyName", aliases = {"--name"}, metaVar = "TOPOLOGY NAME", usage = "name of topology")
     private static String topologyName = "Topo";
 
     @Option(name = "--zookeeperHosts", aliases = {"--zookeeper"}, metaVar = "ZOOKEEPER HOST", usage = "path of zookeeper host")
@@ -49,14 +49,11 @@ public class TTATopo {
     @Option(name = "--outputTopic", aliases = {"--output"}, metaVar = "OUTPUT TOPIC", usage = "name of kafka topic to consume data")
     private static String outputTopic = "output";
 
-    @Option(name = "--modelPath", aliases = {"--model"} , metaVar = "TENSORFLOW MODEL PATH", usage ="path of deep learning model")
-    private static String modelPath = "./models/";
-
     @Option(name = "--parallelismHint", aliases = {"--parm"}, metaVar = "PARALLELISM HINT", usage = "number of spout, bolts(KafkaSpout-ExtractBolt-ExpandBolt-ValidateBolt-DetectBolt-KafkaBolt")
-    private static String parallelism = "1 2 4 4 2 1";
+    private static String parallelism = "2 2 4 4 2 1";
 
     @Option(name = "--testTime", aliases = {"--t"}, metaVar = "TIME", usage = "how long should run topology")
-    private static int testTime = 3;
+    private static int testTime = 10;
 
     @Option(name = "--consumerKey", aliases = {"--key"}, metaVar = "KEY", usage = "Twitter Consumer Key")
     private static String consumerKey = "consumerKey";
@@ -129,7 +126,7 @@ public class TTATopo {
         ExtractionURLBolt extractionBolt = new ExtractionURLBolt();
         ExpansionURLBolt expansionBolt = new ExpansionURLBolt();
         ValidationURLBolt validationBolt = new ValidationURLBolt();
-        DetectionBolt detectionBolt = new DetectionBolt(modelPath);
+        DetectionBolt detectionBolt = new DetectionBolt();
 
 			/* KafkaBolt */
         MyKafkaBolt kafkabolt = new MyKafkaBolt().withProducerProperties(props)
@@ -148,11 +145,11 @@ public class TTATopo {
 
 //        builder.setSpout(INPUT_SPOUT_ID, kafkaSpout, parameters.get(0));
         builder.setSpout(TWITTER_SPOUT_ID, twitterSpout, parameters.get(0));
-        builder.setBolt(EXTRACTION_BOLT_ID, extractionBolt, parameters.get(1)).shuffleGrouping(TWITTER_SPOUT_ID);
-        builder.setBolt(EXPANSION_BOLT_ID, expansionBolt, parameters.get(2)).shuffleGrouping(EXTRACTION_BOLT_ID);
-        builder.setBolt(VALIDATION_BOLT_ID, validationBolt, parameters.get(3)).shuffleGrouping(EXPANSION_BOLT_ID);
-        builder.setBolt(DETECTION_BOLT_ID, detectionBolt, parameters.get(4)).shuffleGrouping(VALIDATION_BOLT_ID);
-        builder.setBolt(KAFKA_BOLT_ID, kafkabolt, parameters.get(5)).shuffleGrouping(DETECTION_BOLT_ID);            // Store Data to Kafka
+        builder.setBolt(EXTRACTION_BOLT_ID, extractionBolt, parameters.get(1)).localOrShuffleGrouping(TWITTER_SPOUT_ID);
+        builder.setBolt(EXPANSION_BOLT_ID, expansionBolt, parameters.get(2)).localOrShuffleGrouping(EXTRACTION_BOLT_ID);
+        builder.setBolt(VALIDATION_BOLT_ID, validationBolt, parameters.get(3)).localOrShuffleGrouping(EXPANSION_BOLT_ID);
+        builder.setBolt(DETECTION_BOLT_ID, detectionBolt, parameters.get(4)).localOrShuffleGrouping(VALIDATION_BOLT_ID);
+        builder.setBolt(KAFKA_BOLT_ID, kafkabolt, parameters.get(5)).localOrShuffleGrouping(DETECTION_BOLT_ID);            // Store Data to Kafka
 
         Config config = new Config();
         config.setNumWorkers(numWorkers);
