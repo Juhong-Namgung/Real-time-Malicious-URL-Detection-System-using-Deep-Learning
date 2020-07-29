@@ -24,7 +24,7 @@ class Evaluator:
         plt.plot(epochs, history_dict['val_fmeasure'], 'r',label='f1')
         plt.plot(epochs, history_dict['val_precision'], 'g',label='precision')
         plt.plot(epochs, history_dict['val_recall'], 'k',label='recall')
-        plt.plot(epochs, history_dict['val_acc'], 'c', label='accuracy')
+        plt.plot(epochs, history_dict['val_accuracy'], 'c', label='accuracy')
 
         plt.xlabel('Epochs')
         plt.grid()
