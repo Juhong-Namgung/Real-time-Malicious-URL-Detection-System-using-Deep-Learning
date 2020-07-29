@@ -77,8 +77,8 @@ public class DetectionBolt extends BaseRichBolt {
         } else {
             detectResult = "[INFO] " + validURL + " is a Benign URL!!!";
         }
-
-        collector.emit(new Values(detectResult));
+        
+	collector.emit(new Values(detectResult));
         collector.ack(input);
     }
 
