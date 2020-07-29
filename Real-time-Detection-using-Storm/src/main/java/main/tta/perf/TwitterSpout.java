@@ -105,7 +105,7 @@ public class TwitterSpout extends BaseRichSpout {
             final Status status = queue.poll();
 
             if (status == null) {
-                Utils.sleep(50);
+                Utils.sleep(10);
             } else {
                 String text = status.getText();
                 LOG.info(status.getText());
