@@ -56,7 +56,7 @@ public class ValidationURLBolt extends BaseRichBolt {
             url = new URL(expandedURL);
             HttpURLConnection http = (HttpURLConnection) url.openConnection();
             http.setRequestMethod("HEAD");
-            http.setConnectTimeout(5000);
+            http.setConnectTimeout(3000);
             statusCode = http.getResponseCode();
         } catch (MalformedURLException e) {
             e.printStackTrace();

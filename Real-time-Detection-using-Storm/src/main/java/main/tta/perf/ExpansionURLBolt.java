@@ -62,7 +62,7 @@ public class ExpansionURLBolt extends BaseRichBolt {
 
         URLConnection conn = url.openConnection(Proxy.NO_PROXY);
         ((HttpURLConnection) conn).setInstanceFollowRedirects(false);
-        conn.setConnectTimeout(5000);
+        conn.setConnectTimeout(3000);
 
         String expandedURL = conn.getHeaderField("Location");
 
