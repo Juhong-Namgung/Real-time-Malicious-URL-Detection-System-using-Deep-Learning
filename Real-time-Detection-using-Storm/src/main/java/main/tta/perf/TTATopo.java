@@ -67,6 +67,30 @@ public class TTATopo {
     @Option(name = "--accessTokenSecret", aliases = {"--tsecret"}, metaVar = "TOKEN SECRET", usage = "Twitter Access Token Secret")
     private static String accessTokenSecret = "accessTokenSecret";
 
+    @Option(name = "--consumerKey2", aliases = {"--key2"}, metaVar = "KEY", usage = "Twitter Consumer Key")
+    private static String consumerKey2 = "consumerKey";
+
+    @Option(name = "--consumerSecret2", aliases = {"--secret2"}, metaVar = "SECRET", usage = "Twitter Consumer Secret")
+    private static String consumerSecret2 = "consumerSecret";
+
+    @Option(name = "--accessToken2", aliases = {"--token2"}, metaVar = "TOKEN", usage = "Twitter Access Token")
+    private static String accessToken2 = "accessToken";
+
+    @Option(name = "--accessTokenSecret2", aliases = {"--tsecret2"}, metaVar = "TOKEN SECRET", usage = "Twitter Access Token Secret")
+    private static String accessTokenSecret2 = "accessTokenSecret";
+
+    @Option(name = "--consumerKey3", aliases = {"--key3"}, metaVar = "KEY", usage = "Twitter Consumer Key")
+    private static String consumerKey3 = "consumerKey";
+
+    @Option(name = "--consumerSecret3", aliases = {"--secret3"}, metaVar = "SECRET", usage = "Twitter Consumer Secret")
+    private static String consumerSecret3 = "consumerSecret";
+
+    @Option(name = "--accessToken3", aliases = {"--token3"}, metaVar = "TOKEN", usage = "Twitter Access Token")
+    private static String accessToken3 = "accessToken";
+
+    @Option(name = "--accessTokenSecret3", aliases = {"--tsecret3"}, metaVar = "TOKEN SECRET", usage = "Twitter Access Token Secret")
+    private static String accessTokenSecret3 = "accessTokenSecret";
+
     /*
      * Topology architecture
      * 1) KafkaSpout or InputSpout
@@ -79,6 +103,8 @@ public class TTATopo {
 
     private static final String KAFKA_SPOUT_ID = "KafkaSpout";
     private static final String TWITTER_SPOUT_ID = "TwitterSpout";
+    private static final String TWITTER_SPOUT_ID2 = "TwitterSpout2";
+    private static final String TWITTER_SPOUT_ID3 = "TwitterSpout3";
     private static final String EXTRACTION_BOLT_ID = "ExtractionBolt";
     private static final String EXPANSION_BOLT_ID = "ExpansionBolt";
     private static final String VALIDATION_BOLT_ID = "ValidationBolt";
@@ -123,6 +149,8 @@ public class TTATopo {
 
         KafkaSpout kafkaSpout = new KafkaSpout(kafkaSpoutConfig);
         TwitterSpout twitterSpout = new TwitterSpout(consumerKey, consumerSecret, accessToken, accessTokenSecret);
+	TwitterSpout twitterSpout2 = new TwitterSpout(consumerKey2, consumerSecret2, accessToken2, accessTokenSecret2);
+        TwitterSpout twitterSpout3 = new TwitterSpout(consumerKey3, consumerSecret3, accessToken3, accessTokenSecret3);
         ExtractionURLBolt extractionBolt = new ExtractionURLBolt();
         ExpansionURLBolt expansionBolt = new ExpansionURLBolt();
         ValidationURLBolt validationBolt = new ValidationURLBolt();
@@ -144,8 +172,10 @@ public class TTATopo {
         }
 
 //        builder.setSpout(INPUT_SPOUT_ID, kafkaSpout, parameters.get(0));
-        builder.setSpout(TWITTER_SPOUT_ID, twitterSpout, parameters.get(0));
-        builder.setBolt(EXTRACTION_BOLT_ID, extractionBolt, parameters.get(1)).localOrShuffleGrouping(TWITTER_SPOUT_ID);
+        builder.setSpout(TWITTER_SPOUT_ID, twitterSpout, parameters.get(0)/3);
+	builder.setSpout(TWITTER_SPOUT_ID2, twitterSpout2, parameters.get(0)/3);
+        builder.setSpout(TWITTER_SPOUT_ID3, twitterSpout3, parameters.get(0)/3);
+        builder.setBolt(EXTRACTION_BOLT_ID, extractionBolt, parameters.get(1)).localOrShuffleGrouping(TWITTER_SPOUT_ID).localOrShuffleGrouping(TWITTER_SPOUT_ID2).localOrShuffleGrouping(TWITTER_SPOUT_ID3);
         builder.setBolt(EXPANSION_BOLT_ID, expansionBolt, parameters.get(2)).localOrShuffleGrouping(EXTRACTION_BOLT_ID);
         builder.setBolt(VALIDATION_BOLT_ID, validationBolt, parameters.get(3)).localOrShuffleGrouping(EXPANSION_BOLT_ID);
         builder.setBolt(DETECTION_BOLT_ID, detectionBolt, parameters.get(4)).localOrShuffleGrouping(VALIDATION_BOLT_ID);
